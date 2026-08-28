@@ -42,10 +42,7 @@ window = pygame.display.set_mode(
 WINDOW_WIDTH, WINDOW_HEIGHT = window.get_size()
 
 INTERNAL_WIDTH = WINDOW_WIDTH * SCALE
-INTERNAL_HEIGHT = WINDOW_WIDTH * SCALE
-
-WINDOW_WIDTH = 0
-WINDOW_HEIGHT = 0
+INTERNAL_HEIGHT = WINDOW_HEIGHT * SCALE
 
 
 # Radar location
@@ -3457,12 +3454,21 @@ DETAIL_PANEL_WIDTH = int(
 
 DETAIL_PANEL_MARGIN = 16 * SCALE
 
+details_scroll_offset = 0
+details_touch_start_y = None
+details_last_touch_y = None
+details_dragging = False
+
 
 def draw_aircraft_details_panel():
 
+    global details_scroll_offset
+    global details_touch_start_y
+    global details_last_touch_y
+    global details_dragging
+
     if selected_aircraft is None:
         return
-
 
     # ========================================================
     # GET AIRCRAFT
@@ -3474,10 +3480,8 @@ def draw_aircraft_details_panel():
             selected_aircraft
         )
 
-
     if plane is None:
         return
-
 
     # ========================================================
     # PANEL GEOMETRY
@@ -3485,7 +3489,7 @@ def draw_aircraft_details_panel():
 
     panel_x = DETAIL_PANEL_MARGIN
 
-    panel_y = 70 * SCALE
+    panel_y = 10 * SCALE
 
     panel_width = DETAIL_PANEL_WIDTH
 
@@ -3494,117 +3498,76 @@ def draw_aircraft_details_panel():
         -
         panel_y
         -
-        45 * SCALE
+        10 * SCALE
     )
-
 
     panel_rect = pygame.Rect(
-
         panel_x,
-
         panel_y,
-
         panel_width,
-
         panel_height
-
     )
-
 
     # ========================================================
     # PANEL BACKGROUND
     # ========================================================
 
     pygame.draw.rect(
-
         canvas,
-
         PANEL_BACKGROUND,
-
         panel_rect,
-
         border_radius=7 * SCALE
-
     )
-
 
     pygame.draw.rect(
-
         canvas,
-
         DIM_GREEN,
-
         panel_rect,
-
         width=1 * SCALE,
-
         border_radius=7 * SCALE
-
     )
-
 
     # ========================================================
     # CLOSE BUTTON
     # ========================================================
 
     close_rect = pygame.Rect(
-
         panel_x
         +
         panel_width
         -
-        38 * SCALE,
+        34 * SCALE,
 
         panel_y
         +
-        10 * SCALE,
+        7 * SCALE,
 
-        28 * SCALE,
+        25 * SCALE,
 
-        28 * SCALE
-
+        25 * SCALE
     )
-
 
     pygame.draw.rect(
-
         canvas,
-
         DIM_GREEN,
-
         close_rect,
-
         border_radius=4 * SCALE
-
     )
-
 
     close_text = DETAILS_SMALL_FONT.render(
-
         "X",
-
         True,
-
         TEXT_GREEN
-
     )
-
 
     close_text_rect = close_text.get_rect(
-
         center=close_rect.center
-
     )
-
 
     canvas.blit(
-
         close_text,
-
         close_text_rect
-
     )
-
 
     # ========================================================
     # TITLE
@@ -3615,119 +3578,134 @@ def draw_aircraft_details_panel():
         "UNKNOWN"
     )
 
-
     if not callsign:
         callsign = "UNKNOWN"
 
-
     title = DETAILS_LARGE_FONT.render(
-
-        callsign,
-
+        str(callsign),
         True,
-
         TEXT_GREEN
-
     )
 
-
     canvas.blit(
-
         title,
-
         (
-
             panel_x
             +
-            14 * SCALE,
+            12 * SCALE,
 
             panel_y
             +
-            10 * SCALE
-
+            7 * SCALE
         )
-
     )
 
-
     # ========================================================
-    # ICAO24
+    # ICAO24 / SQUAWK
     # ========================================================
-
-    icao24 = plane.get(
-
-        "icao24",
-
-        "UNKNOWN"
-
-    )
-
-
-    if icao24:
-
-        icao24 = str(
-            icao24
-        ).upper()
-
 
     icao24 = plane.get(
         "icao24"
     )
-    
+
     if icao24:
         icao24_text = (
             "ICAO24 "
             +
             str(icao24).upper()
         )
-    
     else:
-        icao24_text = "ICAO24  UNKNOWN"
-        
+        icao24_text = "ICAO24 UNKNOWN"
+
     squawk = plane.get(
         "squawk"
     )
-    
+
     if squawk is not None:
+
         try:
+
             squawk_text = (
                 f"{int(squawk):04d}"
             )
-            
-        except (ValueError, TypeError):
-            squawk_text = str(squawk)
-            
+
+        except (
+            ValueError,
+            TypeError
+        ):
+
+            squawk_text = str(
+                squawk
+            )
+
     else:
+
         squawk_text = "UNKNOWN"
-        
+
     combined_text = (
         icao24_text
         +
-        "    SQUAWK  "
+        "   SQUAWK "
         +
         squawk_text
     )
-    
+
     combined_surface = DETAILS_SMALL_FONT.render(
         combined_text,
         True,
         DIM_GREEN
     )
-    
+
     canvas.blit(
         combined_surface,
         (
             panel_x
             +
-            14 * SCALE,
-            
+            12 * SCALE,
+
             panel_y
             +
-            38 * SCALE
-            
+            32 * SCALE
         )
     )
 
+    # ========================================================
+    # CONTENT VIEWPORT
+    # ========================================================
+
+    content_x = panel_x + 12 * SCALE
+
+    content_top = (
+        panel_y
+        +
+        58 * SCALE
+    )
+
+    content_bottom = (
+        panel_y
+        +
+        panel_height
+        -
+        24 * SCALE
+    )
+
+    content_height = (
+        content_bottom
+        -
+        content_top
+    )
+
+    # Clip everything below the header and above the footer.
+    old_clip = canvas.get_clip()
+
+    canvas.set_clip(
+        pygame.Rect(
+            panel_x,
+            content_top,
+            panel_width,
+            content_height
+        )
+    )
 
     # ========================================================
     # DETAILS
@@ -3735,11 +3713,8 @@ def draw_aircraft_details_panel():
 
     details = selected_details
 
-
     if details is None:
-
         details = {}
-
 
     # ========================================================
     # SAFE VALUE HELPER
@@ -3754,134 +3729,103 @@ def draw_aircraft_details_panel():
             key
         )
 
-
         if value is None:
             return default
 
-
-        if isinstance(value, str):
+        if isinstance(
+            value,
+            str
+        ):
 
             value = value.strip()
 
             if not value:
                 return default
 
-
         return value
 
-
     # ========================================================
-    # EXTERNAL AIRCRAFT INFORMATION
+    # EXTERNAL INFORMATION
     # ========================================================
 
     registration = detail_value(
         "registration"
     )
 
-
     aircraft_type = detail_value(
         "aircraft_type"
     )
-
 
     aircraft_icao_type = detail_value(
         "aircraft_icao_type",
         ""
     )
 
-
     manufacturer = detail_value(
         "manufacturer"
     )
 
-
     airline = detail_value(
         "airline"
     )
-
 
     airline_icao = detail_value(
         "airline_icao",
         ""
     )
 
-
     airline_iata = detail_value(
         "airline_iata",
         ""
     )
 
-
     country = detail_value(
         "country"
     )
-
 
     origin = detail_value(
         "origin"
     )
 
-
-    origin_icao = detail_value(
-        "origin_icao",
-        ""
-    )
-
-
     destination = detail_value(
         "destination"
     )
-
-
-    destination_icao = detail_value(
-        "destination_icao",
-        ""
-    )
-
 
     route = detail_value(
         "route"
     )
 
-
     # ========================================================
-    # LIVE AIRCRAFT VALUES
+    # LIVE VALUES
     # ========================================================
 
     altitude = plane.get(
         "altitude"
     )
 
-
     speed = plane.get(
         "speed"
     )
-
 
     heading = plane.get(
         "heading"
     )
 
-
     vertical_rate = plane.get(
         "vertical_rate"
     )
-
 
     latitude = plane.get(
         "latitude"
     )
 
-
     longitude = plane.get(
         "longitude"
     )
 
-
     distance = plane.get(
         "distance"
     )
-
 
     # ========================================================
     # FORMAT LIVE VALUES
@@ -3897,7 +3841,6 @@ def draw_aircraft_details_panel():
 
         altitude_text = "UNKNOWN"
 
-
     if speed is not None:
 
         speed_text = (
@@ -3907,7 +3850,6 @@ def draw_aircraft_details_panel():
     else:
 
         speed_text = "UNKNOWN"
-
 
     if heading is not None:
 
@@ -3919,7 +3861,6 @@ def draw_aircraft_details_panel():
 
         heading_text = "UNKNOWN"
 
-
     if vertical_rate is not None:
 
         vertical_text = (
@@ -3929,7 +3870,6 @@ def draw_aircraft_details_panel():
     else:
 
         vertical_text = "UNKNOWN"
-
 
     if latitude is not None:
 
@@ -3941,7 +3881,6 @@ def draw_aircraft_details_panel():
 
         latitude_text = "UNKNOWN"
 
-
     if longitude is not None:
 
         longitude_text = (
@@ -3951,7 +3890,6 @@ def draw_aircraft_details_panel():
     else:
 
         longitude_text = "UNKNOWN"
-
 
     if distance is not None:
 
@@ -3963,13 +3901,11 @@ def draw_aircraft_details_panel():
 
         distance_text = "UNKNOWN"
 
-
     # ========================================================
     # FORMAT AIRCRAFT TYPE
     # ========================================================
 
     type_text = aircraft_type
-
 
     if aircraft_icao_type:
 
@@ -3980,7 +3916,6 @@ def draw_aircraft_details_panel():
         else:
 
             type_text = (
-
                 str(type_text)
                 +
                 " ("
@@ -3988,9 +3923,7 @@ def draw_aircraft_details_panel():
                 str(aircraft_icao_type)
                 +
                 ")"
-
             )
-
 
     # ========================================================
     # FORMAT AIRLINE
@@ -3998,26 +3931,23 @@ def draw_aircraft_details_panel():
 
     airline_text = airline
 
-
     airline_codes = []
 
-
     if airline_icao:
+
         airline_codes.append(
             str(airline_icao)
         )
 
-
     if airline_iata:
+
         airline_codes.append(
             str(airline_iata)
         )
 
-
     if airline_codes:
 
         airline_text = (
-
             str(airline)
             +
             " ("
@@ -4027,9 +3957,7 @@ def draw_aircraft_details_panel():
             )
             +
             ")"
-
         )
-
 
     # ========================================================
     # FORMAT ROUTE
@@ -4050,207 +3978,93 @@ def draw_aircraft_details_panel():
     ):
 
         route_text = (
-
             str(origin)
             +
             " -> "
             +
             str(destination)
-
         )
 
     else:
 
         route_text = "UNKNOWN"
 
-
     # ========================================================
-    # DRAW SECTION HEADER
-    # ========================================================
-
-    row_y = (
-
-        panel_y
-        +
-        70 * SCALE
-
-    )
-
-
-    def draw_section_header(
-        text
-    ):
-
-        nonlocal row_y
-
-
-        section_surface = DETAILS_SMALL_FONT.render(
-
-            text,
-
-            True,
-
-            DIM_GREEN
-
-        )
-
-
-        canvas.blit(
-
-            section_surface,
-
-            (
-
-                panel_x
-                +
-                14 * SCALE,
-
-                row_y
-
-            )
-
-        )
-
-
-        row_y += 21 * SCALE
-
-
-    # ========================================================
-    # DRAW NORMAL ROW
-    # ========================================================
-
-    def draw_row(
-        label,
-        value,
-        spacing=39
-    ):
-
-        nonlocal row_y
-
-
-        label_surface = DETAILS_SMALL_FONT.render(
-
-            label,
-
-            True,
-
-            DIM_GREEN
-
-        )
-
-
-        value_surface = DETAILS_SMALL_FONT.render(
-
-            str(value),
-
-            True,
-
-            TEXT_GREEN
-
-        )
-
-
-        canvas.blit(
-
-            label_surface,
-
-            (
-
-                panel_x
-                +
-                14 * SCALE,
-
-                row_y
-
-            )
-
-        )
-
-
-        canvas.blit(
-
-            value_surface,
-
-            (
-
-                panel_x
-                +
-                14 * SCALE,
-
-                row_y
-                +
-                20 * SCALE
-
-            )
-
-        )
-
-
-        row_y += spacing * SCALE
-
-
-    # ========================================================
-    # DRAW ROUTE
-    # ========================================================
-
-    draw_section_header(
-        ""
-    )
-
-
-    draw_row(
-
-        "FLIGHT ROUTE",
-
-        route_text
-
-    )
-
-
-    draw_row(
-
-        "AIRLINE",
-
-        airline_text
-
-    )
-
-
-    draw_row(
-
-        "REGISTRATION",
-
-        registration
-
-    )
-
-
-    # ========================================================
-    # OUTBOUND / INBOUND INFORMATION
+    # FLIGHT ROTATION
     # ========================================================
 
     outbound = details.get(
         "outbound"
     )
 
-
     inbound = details.get(
         "inbound"
     )
-
 
     previous_flight = details.get(
         "previous_flight"
     )
 
-
     next_flight = details.get(
         "next_flight"
     )
 
+    # ========================================================
+    # BUILD CONTENT
+    #
+    # Instead of drawing directly, we build a list of
+    # sections and rows. This allows the content to scroll.
+    # ========================================================
+
+    content_items = []
+
+    def add_header(text):
+
+        content_items.append(
+            (
+                "header",
+                text
+            )
+        )
+
+    def add_row(
+        label,
+        value
+    ):
+
+        content_items.append(
+            (
+                "row",
+                label,
+                str(value)
+            )
+        )
 
     # ========================================================
-    # ROUTE HISTORY / ROTATION
+    # ROUTE
+    # ========================================================
+
+    add_header(
+        "FLIGHT ROUTE"
+    )
+
+    add_row(
+        "ROUTE",
+        route_text
+    )
+
+    add_row(
+        "AIRLINE",
+        airline_text
+    )
+
+    add_row(
+        "REGISTRATION",
+        registration
+    )
+
+    # ========================================================
+    # ROTATION
     # ========================================================
 
     if (
@@ -4263,10 +4077,9 @@ def draw_aircraft_details_panel():
         next_flight
     ):
 
-        draw_section_header(
+        add_header(
             "FLIGHT ROTATION"
         )
-
 
         # ----------------------------------------------------
         # OUTBOUND
@@ -4282,39 +4095,30 @@ def draw_aircraft_details_panel():
                 "UNKNOWN"
             )
 
-
             outbound_destination = outbound.get(
                 "destination",
                 "UNKNOWN"
             )
 
-
             outbound_callsign = outbound.get(
                 "callsign"
             )
 
-
             outbound_text = (
-
                 str(outbound_origin)
                 +
                 " -> "
                 +
                 str(outbound_destination)
-
             )
-
 
             if outbound_callsign:
 
                 outbound_text += (
-
                     "  "
                     +
                     str(outbound_callsign)
-
                 )
-
 
         elif outbound:
 
@@ -4326,15 +4130,10 @@ def draw_aircraft_details_panel():
 
             outbound_text = "UNKNOWN"
 
-
-        draw_row(
-
+        add_row(
             "OUTBOUND",
-
             outbound_text
-
         )
-
 
         # ----------------------------------------------------
         # INBOUND
@@ -4350,39 +4149,30 @@ def draw_aircraft_details_panel():
                 "UNKNOWN"
             )
 
-
             inbound_destination = inbound.get(
                 "destination",
                 "UNKNOWN"
             )
 
-
             inbound_callsign = inbound.get(
                 "callsign"
             )
 
-
             inbound_text = (
-
                 str(inbound_origin)
                 +
                 " -> "
                 +
                 str(inbound_destination)
-
             )
-
 
             if inbound_callsign:
 
                 inbound_text += (
-
                     "  "
                     +
                     str(inbound_callsign)
-
                 )
-
 
         elif inbound:
 
@@ -4394,23 +4184,10 @@ def draw_aircraft_details_panel():
 
             inbound_text = "UNKNOWN"
 
-
-        draw_row(
-
+        add_row(
             "INBOUND",
-
             inbound_text
-
         )
-
-
-    # ========================================================
-    # PREVIOUS / NEXT FLIGHT
-    #
-    # These are supported separately because different
-    # data sources may call the same information different
-    # things.
-    # ========================================================
 
     elif (
         previous_flight
@@ -4418,13 +4195,12 @@ def draw_aircraft_details_panel():
         next_flight
     ):
 
-        draw_section_header(
+        add_header(
             "AIRCRAFT ROTATION"
         )
 
-
         # ----------------------------------------------------
-        # PREVIOUS FLIGHT
+        # PREVIOUS
         # ----------------------------------------------------
 
         if isinstance(
@@ -4437,37 +4213,29 @@ def draw_aircraft_details_panel():
                 "UNKNOWN"
             )
 
-
             previous_destination = previous_flight.get(
                 "destination",
                 "UNKNOWN"
             )
 
-
             previous_callsign = previous_flight.get(
                 "callsign"
             )
 
-
             previous_text = (
-
                 str(previous_origin)
                 +
                 " -> "
                 +
                 str(previous_destination)
-
             )
-
 
             if previous_callsign:
 
                 previous_text += (
-
                     "  "
                     +
                     str(previous_callsign)
-
                 )
 
         elif previous_flight:
@@ -4480,18 +4248,13 @@ def draw_aircraft_details_panel():
 
             previous_text = "UNKNOWN"
 
-
-        draw_row(
-
+        add_row(
             "PREVIOUS",
-
             previous_text
-
         )
 
-
         # ----------------------------------------------------
-        # NEXT FLIGHT
+        # NEXT
         # ----------------------------------------------------
 
         if isinstance(
@@ -4504,37 +4267,29 @@ def draw_aircraft_details_panel():
                 "UNKNOWN"
             )
 
-
             next_destination = next_flight.get(
                 "destination",
                 "UNKNOWN"
             )
 
-
             next_callsign = next_flight.get(
                 "callsign"
             )
 
-
             next_text = (
-
                 str(next_origin)
                 +
                 " -> "
                 +
                 str(next_destination)
-
             )
-
 
             if next_callsign:
 
                 next_text += (
-
                     "  "
                     +
                     str(next_callsign)
-
                 )
 
         elif next_flight:
@@ -4547,193 +4302,416 @@ def draw_aircraft_details_panel():
 
             next_text = "UNKNOWN"
 
-
-        draw_row(
-
+        add_row(
             "NEXT",
-
             next_text
-
         )
-
 
     # ========================================================
     # AIRCRAFT
     # ========================================================
 
+    add_header(
+        "AIRCRAFT"
+    )
 
-    draw_row(
-
-        "AIRCRAFT TYPE",
-
+    add_row(
+        "TYPE",
         type_text
-
     )
 
-
-    draw_row(
-
+    add_row(
         "MANUFACTURER",
-
         manufacturer
-
     )
 
-
-    draw_row(
-
+    add_row(
         "COUNTRY",
-
         country
-
     )
-
 
     # ========================================================
     # LIVE DATA
     # ========================================================
 
-    draw_section_header(
-        ""
+    add_header(
+        "LIVE DATA"
     )
 
-    draw_section_header(
-        "LIVE DATA:"
-    )
-    
-    draw_section_header(
-        ""
-    )
-
-
-    draw_row(
-
+    add_row(
         "ALTITUDE",
-
         altitude_text
-
     )
 
-
-    draw_row(
-
+    add_row(
         "SPEED",
-
         speed_text
-
     )
 
-
-    draw_row(
-
+    add_row(
         "HEADING",
-
         heading_text
-
     )
 
-
-    draw_row(
-
+    add_row(
         "VERTICAL RATE",
-
         vertical_text
-
     )
 
-
-    draw_row(
-
+    add_row(
         "POSITION",
-
         latitude_text
         +
         ", "
         +
         longitude_text
-
     )
 
-
-    draw_row(
-
+    add_row(
         "DISTANCE",
-
         distance_text
-
     )
-
 
     # ========================================================
-    # DETAIL UPDATE STATUS
+    # WRAP TEXT HELPER
+    # ========================================================
+
+    max_text_width = (
+        panel_width
+        -
+        28 * SCALE
+    )
+
+    def wrap_text(
+        text,
+        font,
+        max_width
+    ):
+
+        words = str(
+            text
+        ).split()
+
+        if not words:
+
+            return [""]
+
+        lines = []
+
+        current = ""
+
+        for word in words:
+
+            test = (
+                word
+                if not current
+                else
+                current
+                +
+                " "
+                +
+                word
+            )
+
+            test_surface = font.render(
+                test,
+                True,
+                TEXT_GREEN
+            )
+
+            if (
+                test_surface.get_width()
+                <=
+                max_width
+            ):
+
+                current = test
+
+            else:
+
+                if current:
+
+                    lines.append(
+                        current
+                    )
+
+                current = word
+
+        if current:
+
+            lines.append(
+                current
+            )
+
+        return lines
+
+    # ========================================================
+    # DRAW CONTENT
+    # ========================================================
+
+    content_y = (
+        content_top
+        -
+        details_scroll_offset
+    )
+
+    row_height = 32 * SCALE
+    header_height = 22 * SCALE
+    wrapped_extra = 18 * SCALE
+
+    for item in content_items:
+
+        if item[0] == "header":
+
+            header_surface = DETAILS_SMALL_FONT.render(
+                item[1],
+                True,
+                DIM_GREEN
+            )
+
+            canvas.blit(
+                header_surface,
+                (
+                    content_x,
+                    content_y
+                )
+            )
+
+            content_y += header_height
+
+        else:
+
+            label = item[1]
+            value = item[2]
+
+            label_surface = DETAILS_SMALL_FONT.render(
+                label,
+                True,
+                DIM_GREEN
+            )
+
+            canvas.blit(
+                label_surface,
+                (
+                    content_x,
+                    content_y
+                )
+            )
+
+            content_y += (
+                15 * SCALE
+            )
+
+            value_x = content_x
+
+            value_lines = wrap_text(
+                value,
+                DETAILS_SMALL_FONT,
+                max_text_width
+            )
+
+            for line in value_lines:
+
+                value_surface = DETAILS_SMALL_FONT.render(
+                    line,
+                    True,
+                    TEXT_GREEN
+                )
+
+                canvas.blit(
+                    value_surface,
+                    (
+                        value_x,
+                        content_y
+                    )
+                )
+
+                content_y += (
+                    17 * SCALE
+                )
+
+            content_y += (
+                8 * SCALE
+            )
+
+    # ========================================================
+    # TOTAL CONTENT HEIGHT
+    # ========================================================
+
+    total_content_height = (
+        content_y
+        -
+        (
+            content_top
+            -
+            details_scroll_offset
+        )
+    )
+
+    max_scroll = max(
+        0,
+        total_content_height
+        -
+        content_height
+    )
+
+    # Clamp scroll position
+    details_scroll_offset = max(
+        0,
+        min(
+            details_scroll_offset,
+            max_scroll
+        )
+    )
+
+    # ========================================================
+    # RESTORE CLIP
+    # ========================================================
+
+    canvas.set_clip(
+        old_clip
+    )
+
+    # ========================================================
+    # SCROLLBAR
+    # ========================================================
+
+    if max_scroll > 0:
+
+        scrollbar_x = (
+            panel_x
+            +
+            panel_width
+            -
+            7 * SCALE
+        )
+
+        scrollbar_top = content_top
+
+        scrollbar_bottom = (
+            content_bottom
+        )
+
+        scrollbar_height = (
+            scrollbar_bottom
+            -
+            scrollbar_top
+        )
+
+        pygame.draw.rect(
+            canvas,
+            DIM_GREEN,
+            pygame.Rect(
+                scrollbar_x,
+                scrollbar_top,
+                3 * SCALE,
+                scrollbar_height
+            ),
+            border_radius=2 * SCALE
+        )
+
+        thumb_height = max(
+            20 * SCALE,
+            int(
+                scrollbar_height
+                *
+                (
+                    content_height
+                    /
+                    total_content_height
+                )
+            )
+        )
+
+        thumb_range = (
+            scrollbar_height
+            -
+            thumb_height
+        )
+
+        if max_scroll > 0:
+
+            thumb_y = (
+                scrollbar_top
+                +
+                int(
+                    thumb_range
+                    *
+                    (
+                        details_scroll_offset
+                        /
+                        max_scroll
+                    )
+                )
+            )
+
+        else:
+
+            thumb_y = scrollbar_top
+
+        pygame.draw.rect(
+            canvas,
+            TEXT_GREEN,
+            pygame.Rect(
+                scrollbar_x,
+                thumb_y,
+                3 * SCALE,
+                thumb_height
+            ),
+            border_radius=2 * SCALE
+        )
+
+    # ========================================================
+    # UPDATE STATUS
     # ========================================================
 
     update_time = details.get(
-
         "last_updated",
-
         0
-
     )
-
 
     if update_time:
 
         age = int(
-
             time.time()
             -
             update_time
-
         )
 
-
         update_text = (
-
             f"DETAILS UPDATED {age}s AGO"
-
         )
 
     else:
 
         update_text = (
-
             "LOADING DETAILS..."
-
         )
-
 
     update_surface = small_font.render(
-
         update_text,
-
         True,
-
         DIM_GREEN
-
     )
 
+    # Keep status inside panel
+    status_y = (
+        panel_y
+        +
+        panel_height
+        -
+        17 * SCALE
+    )
 
     canvas.blit(
-
         update_surface,
-
         (
-
             panel_x
             +
-            14 * SCALE,
-
-            panel_y
-            +
-            panel_height
-            -
-            24 * SCALE
-
+            12 * SCALE,
+            status_y
         )
-
     )
-
 
 
 def handle_details_click(mouse_pos):
@@ -5592,10 +5570,9 @@ def handle_menu_click(mouse_pos):
     return False
 
     
-
-
-
+# ============================================================
 # MAIN LOOP
+# ============================================================
 
 running = True
 
@@ -5625,6 +5602,7 @@ while running:
             # is unavailable. The API thread will safely continue
             # retrying in the background.
             with aircraft_lock:
+
                 aircraft.clear()
 
             pygame.display.set_caption(
@@ -5632,7 +5610,9 @@ while running:
             )
 
             if not ensure_wifi():
+
                 running = False
+
                 continue
 
             pygame.display.set_caption(
@@ -5641,18 +5621,42 @@ while running:
 
             last_wifi_check = time.time()
 
+
+    # ------------------------------------------------------------
     # EVENTS
+    # ------------------------------------------------------------
 
     for event in pygame.event.get():
 
+        # --------------------------------------------------------
+        # QUIT
+        # --------------------------------------------------------
+
         if event.type == pygame.QUIT:
+
             continue
-        
+
+
+        # --------------------------------------------------------
+        # KEYBOARD
+        # --------------------------------------------------------
+
         elif event.type == pygame.KEYDOWN:
+
             if event.key == pygame.K_ESCAPE:
+
                 running = False
 
+
+        # --------------------------------------------------------
+        # MOUSE / TOUCH BUTTON DOWN
+        # --------------------------------------------------------
+
         elif event.type == pygame.MOUSEBUTTONDOWN:
+
+            # ----------------------------------------------------
+            # LEFT CLICK / TOUCH
+            # ----------------------------------------------------
 
             if event.button == 1:
 
@@ -5665,30 +5669,101 @@ while running:
                 )
 
 
-                # ----------------------------------------------------
+                # =================================================
+                # DETAILS PANEL TOUCH START
+                # =================================================
+
+                if selected_aircraft is not None:
+
+                    # Determine the details panel geometry.
+                    #
+                    # This must match draw_aircraft_details_panel().
+
+                    details_panel_x = (
+                        DETAIL_PANEL_MARGIN
+                    )
+
+                    details_panel_y = (
+                        10 * SCALE
+                    )
+
+                    details_panel_width = (
+                        DETAIL_PANEL_WIDTH
+                    )
+
+                    details_panel_height = (
+                        INTERNAL_HEIGHT
+                        -
+                        details_panel_y
+                        -
+                        10 * SCALE
+                    )
+
+
+                    details_panel_rect = pygame.Rect(
+
+                        details_panel_x,
+
+                        details_panel_y,
+
+                        details_panel_width,
+
+                        details_panel_height
+
+                    )
+
+
+                    # ------------------------------------------------
+                    # Check whether the touch started inside the
+                    # details panel.
+                    # ------------------------------------------------
+
+                    if details_panel_rect.collidepoint(
+                        mouse_pos
+                    ):
+
+                        details_touch_start_y = (
+                            mouse_pos[1]
+                        )
+
+                        details_last_touch_y = (
+                            mouse_pos[1]
+                        )
+
+                        details_dragging = True
+
+                        # Do NOT allow this touch to continue into
+                        # aircraft selection.
+                        continue
+
+
+                # ------------------------------------------------
                 # MENU
-                # ----------------------------------------------------
+                # ------------------------------------------------
 
                 if (
                     menu_open
                     and
                     menu_page == "custom_location"
                 ):
-                    
+
                     if handle_custom_location_click(
                         mouse_pos
                     ):
+
                         continue
-                    
+
+
                 if handle_menu_click(
                     mouse_pos
                 ):
+
                     continue
 
 
-                # ----------------------------------------------------
+                # ------------------------------------------------
                 # DETAILS PANEL
-                # ----------------------------------------------------
+                # ------------------------------------------------
 
                 if handle_details_click(
                     mouse_pos
@@ -5697,24 +5772,106 @@ while running:
                     continue
 
 
-                # ----------------------------------------------------
+                # ------------------------------------------------
                 # AIRCRAFT
-                # ----------------------------------------------------
+                # ------------------------------------------------
 
                 handle_aircraft_click(
                     mouse_pos
                 )
 
 
-    # Update smooth movement
+                # ------------------------------------------------
+                # END LEFT CLICK
+                # ------------------------------------------------
+
+
+            # ----------------------------------------------------
+            # MOUSE WHEEL UP
+            #
+            # Useful when testing on the PC.
+            # ----------------------------------------------------
+
+            elif event.button == 4:
+
+                if selected_aircraft is not None:
+
+                    details_scroll_offset -= (
+                        35 * SCALE
+                    )
+
+
+            # ----------------------------------------------------
+            # MOUSE WHEEL DOWN
+            #
+            # Useful when testing on the PC.
+            # ----------------------------------------------------
+
+            elif event.button == 5:
+
+                if selected_aircraft is not None:
+
+                    details_scroll_offset += (
+                        35 * SCALE
+                    )
+
+
+        # --------------------------------------------------------
+        # MOUSE / TOUCH MOVEMENT
+        # --------------------------------------------------------
+
+        elif event.type == pygame.MOUSEMOTION:
+
+            if (
+                selected_aircraft is not None
+                and
+                details_dragging
+            ):
+
+                current_y = (
+                    event.pos[1] * SCALE
+                )
+
+                delta = (
+                    details_last_touch_y
+                    -
+                    current_y
+                )
+
+                details_scroll_offset += delta
+
+                details_last_touch_y = current_y
+
+
+        # --------------------------------------------------------
+        # MOUSE / TOUCH RELEASE
+        # --------------------------------------------------------
+
+        elif event.type == pygame.MOUSEBUTTONUP:
+
+            if event.button == 1:
+
+                details_dragging = False
+
+                details_touch_start_y = None
+
+                details_last_touch_y = None
+
+
+    # ============================================================
+    # UPDATE SMOOTH MOVEMENT
+    # ============================================================
 
     update_radar_layout()
-        
+
     update_animation()
+
     update_selected_details()
 
 
-    # Draw
+    # ============================================================
+    # DRAW
+    # ============================================================
 
     canvas.fill(
         BACKGROUND
@@ -5735,29 +5892,57 @@ while running:
     draw_menu_button()
 
     draw_menu()
-    
+
     draw_aircraft_details_panel()
 
 
-    # Scale the internal 2400x1800 canvas back down to the
-    # actual 1200x900 display resolution.
+    # ============================================================
+    # SCALE INTERNAL CANVAS TO DISPLAY
+    # ============================================================
     #
-    # pygame.transform.scale() is considerably cheaper than
-    # smoothscale() and, unlike blitting the internal canvas
-    # directly, keeps the whole radar visible on screen.
+    # Internal canvas:
+    #
+    #     2400 x 1800
+    #
+    # Physical display:
+    #
+    #     1200 x 900
+    #
+    # This keeps the existing SCALE = 2 rendering system.
+    # ============================================================
+
     display_surface = pygame.transform.scale(
+
         canvas,
-        (WINDOW_WIDTH, WINDOW_HEIGHT)
+
+        (
+            WINDOW_WIDTH,
+            WINDOW_HEIGHT
+        )
+
     )
 
+
     window.blit(
+
         display_surface,
+
         (0, 0)
+
     )
+
+
+    # ============================================================
+    # DISPLAY
+    # ============================================================
 
     pygame.display.flip()
 
-    clock.tick(60)
 
+    # ============================================================
+    # FRAME RATE
+    # ============================================================
+
+    clock.tick(60)
 
 pygame.quit()
