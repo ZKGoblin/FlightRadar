@@ -147,7 +147,8 @@ menu_open = False
 pygame.init()
 
 window = pygame.display.set_mode(
-    (WINDOW_WIDTH, WINDOW_HEIGHT)
+    (0, 0),
+    pygame.FULLSCREEN | pygame.NOFRAME
 )
 
 pygame.display.set_caption(
@@ -163,36 +164,19 @@ canvas = pygame.Surface(
 
 # FONTS
 
-font = pygame.font.SysFont(
-    "consolas",
-    18 * SCALE
+DETAIL_FONT_MEDIUM = pygame.font.Font(
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    15
 )
 
-small_font = pygame.font.SysFont(
-    "consolas",
-    13 * SCALE
-)
-
-large_font = pygame.font.SysFont(
-    "consolas",
-    24 * SCALE,
-    bold=True
-)
-
-# Aircraft details fonts. These aliases keep the details panel
-# independent from the radar fonts while remaining compatible
-# with the current configuration. Change these sizes here if
-# you want to adjust the details text later.
-DETAILS_SMALL_FONT = pygame.font.SysFont(
-    "consolas",
-    13 * SCALE
-)
-
-DETAILS_LARGE_FONT = pygame.font.SysFont(
-    "consolas",
-    18 * SCALE,
-    bold=True
-)
+# Keep the existing font variable names so that the rest of the
+# program does not need to be changed. All Pygame text now uses
+# the same DejaVu Sans 15px font.
+font = DETAIL_FONT_MEDIUM
+small_font = DETAIL_FONT_MEDIUM
+large_font = DETAIL_FONT_MEDIUM
+DETAILS_SMALL_FONT = DETAIL_FONT_MEDIUM
+DETAILS_LARGE_FONT = DETAIL_FONT_MEDIUM
 
 
 # RADAR
