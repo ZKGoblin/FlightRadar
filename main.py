@@ -31,8 +31,8 @@ last_wifi_check = time.time()
 
 # CONFIGURATION
 
-WINDOW_WIDTH = 1200
-WINDOW_HEIGHT = 900
+WINDOW_WIDTH = 480
+WINDOW_HEIGHT = 320
 
 # Render at higher resolution and downsample.
 SCALE = 2
@@ -164,20 +164,55 @@ canvas = pygame.Surface(
 
 # FONTS
 
-DETAIL_FONT_MEDIUM = pygame.font.Font(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    15
+FONT_PATH = (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 )
 
-# Keep the existing font variable names so that the rest of the
-# program does not need to be changed. All Pygame text now uses
-# the same DejaVu Sans 15px font.
-font = DETAIL_FONT_MEDIUM
-small_font = DETAIL_FONT_MEDIUM
-large_font = DETAIL_FONT_MEDIUM
-DETAILS_SMALL_FONT = DETAIL_FONT_MEDIUM
-DETAILS_LARGE_FONT = DETAIL_FONT_MEDIUM
+FONT_SMALL_SIZE = 22
+FONT_MEDIUM_SIZE = 25
+FONT_LARGE_SIZE = 30
 
+font_small = pygame.font.Font(
+    FONT_PATH,
+    FONT_SMALL_SIZE
+)
+
+font_medium = pygame.font.Font(
+    FONT_PATH,
+    FONT_MEDIUM_SIZE
+)
+
+font_large = pygame.font.Font(
+    FONT_PATH,
+    FONT_LARGE_SIZE
+)
+
+DETAIL_FONT_SMALL_SIZE = 20
+DETAIL_FONT_MEDIUM_SIZE = 25
+DETAIL_FONT_LARGE_SIZE = 30
+
+DETAIL_FONT_SMALL = pygame.font.Font(
+    FONT_PATH,
+    DETAIL_FONT_SMALL_SIZE
+)
+
+DETAIL_FONT_MEDIUM = pygame.font.Font(
+    FONT_PATH,
+    DETAIL_FONT_MEDIUM_SIZE
+)
+
+DETAIL_FONT_LARGE = pygame.font.Font(
+    FONT_PATH,
+    DETAIL_FONT_LARGE_SIZE
+)
+
+small_font = font_small
+font = font_medium
+large_font = font_large
+
+DETAILS_SMALL_FONT = DETAIL_FONT_SMALL
+DETAILS_LARGE_FONT = DETAIL_FONT_LARGE
+DETAILS_MEDIUM_FONT = DETAIL_FONT_MEDIUM
 
 # RADAR
 
@@ -185,7 +220,7 @@ DETAILS_LARGE_FONT = DETAIL_FONT_MEDIUM
 # RADAR POSITION
 # ============================================================
 
-RADAR_RADIUS = 350 * SCALE
+RADAR_RADIUS = 130 * SCALE
 
 RADAR_CENTER = (
     INTERNAL_WIDTH // 2,
@@ -197,7 +232,7 @@ RADAR_CENTER_NORMAL_X = (
 )
 
 RADAR_CENTER_SELECTED_X = int(
-    INTERNAL_WIDTH * 0.65
+    INTERNAL_WIDTH * 0.69
 )
 
 RADAR_CENTER_Y = (
@@ -1198,7 +1233,7 @@ def draw_compass():
             math.sin(angle)
             * (
                 RADAR_RADIUS
-                + 25 * SCALE
+                + 10 * SCALE
             )
         )
 
@@ -1208,7 +1243,7 @@ def draw_compass():
             math.cos(angle)
             * (
                 RADAR_RADIUS
-                + 25 * SCALE
+                + 10 * SCALE
             )
         )
 
@@ -1983,10 +2018,10 @@ location_verified = False
 def draw_menu_button():
 
     button_rect = pygame.Rect(
-        MENU_X,
-        MENU_Y,
-        MENU_BUTTON_SIZE,
-        MENU_BUTTON_SIZE
+        MENU_X - 5 * SCALE,
+        MENU_Y - 5 * SCALE,
+        MENU_BUTTON_SIZE + 10 * SCALE,
+        MENU_BUTTON_SIZE + 10 * SCALE
     )
 
     pygame.draw.rect(
@@ -2283,24 +2318,19 @@ def draw_location_menu():
 
 def draw_custom_location_menu():
 
-    menu_x = MENU_X
+    menu_x = 6 * SCALE
+    menu_y = 6 * SCALE
 
-    menu_y = (
-        MENU_Y
-        + MENU_BUTTON_SIZE
-        + 6 * SCALE
-    )
-
-    menu_width = 360 * SCALE
-    menu_height = 470 * SCALE
+    menu_width = INTERNAL_WIDTH - 12  * SCALE
+    menu_height = INTERNAL_HEIGHT - 12 * SCALE
 
 
     menu_rect = pygame.Rect(
         menu_x,
-        menu_y,
-        menu_width,
-        menu_height
-    )
+            menu_y,
+            menu_width,
+            menu_height
+        )
 
 
     # --------------------------------------------------------
@@ -2308,48 +2338,58 @@ def draw_custom_location_menu():
     # --------------------------------------------------------
 
     pygame.draw.rect(
-        canvas,
-        PANEL_BACKGROUND,
-        menu_rect,
-        border_radius=6 * SCALE
-    )
+            canvas,
+            PANEL_BACKGROUND,
+            menu_rect,
+            border_radius=6 * SCALE
+        )
 
 
     pygame.draw.rect(
-        canvas,
-        DIM_GREEN,
-        menu_rect,
-        width=1 * SCALE,
-        border_radius=6 * SCALE
-    )
+            canvas,
+            DIM_GREEN,
+            menu_rect,
+            width=1 * SCALE,
+            border_radius=6 * SCALE
+        )
 
 
     # --------------------------------------------------------
     # BACK
     # --------------------------------------------------------
 
+    top_margin = 14 * SCALE
+
     back_rect = pygame.Rect(
-        menu_x + 10 * SCALE,
-        menu_y + 8 * SCALE,
-        70 * SCALE,
-        32 * SCALE
-    )
+            menu_x + 10 * SCALE,
+            menu_y + 10 * SCALE,
+            75 * SCALE,
+            34 * SCALE
+        )
+
+    pygame.draw.rect(
+        canvas,
+        DIM_GREEN,
+        back_rect,
+        border_radius=4 * SCALE
+       )
 
 
     back_text = small_font.render(
-        "< BACK",
-        True,
-        TEXT_GREEN
-    )
+            "< BACK",
+            True,
+            TEXT_GREEN
+        )
 
+
+    back_text_rect = back_text.get_rect(
+        center=back_rect.center
+        )
 
     canvas.blit(
         back_text,
-        (
-            menu_x + 14 * SCALE,
-            menu_y + 10 * SCALE
+        back_text_rect
         )
-    )
 
 
     # --------------------------------------------------------
@@ -2357,151 +2397,135 @@ def draw_custom_location_menu():
     # --------------------------------------------------------
 
     title = small_font.render(
-        "ENTER LOCATION",
-        True,
-        TEXT_GREEN
-    )
+            "ENTER LOCATION",
+            True,
+            TEXT_GREEN
+        )
 
 
     title_rect = title.get_rect(
-        top=menu_y + 10 * SCALE,
-        right=menu_x + menu_width - 12 * SCALE
-    )
-
+            center=(
+            menu_x + menu_width // 2,
+            menu_y + 27 * SCALE
+            )
+        )
 
     canvas.blit(
-        title,
-        title_rect
-    )
+            title,
+            title_rect
+        )
 
 
     # ========================================================
     # LATITUDE FIELD
     # ========================================================
 
-    field_width = 150 * SCALE
-    field_height = 42 * SCALE
+    field_gap = 10 * SCALE
 
+    field_width = (
+        menu_width
+        - 30 * SCALE
+        - field_gap
+        ) // 2
+
+    field_height = 48 * SCALE
+
+    fields_y = menu_y + 58 * SCALE
 
     latitude_rect = pygame.Rect(
+            menu_x + 10 * SCALE,
+            fields_y,
+            field_width,
+            field_height
+        )
 
-        menu_x + 15 * SCALE,
-
-        menu_y + 50 * SCALE,
-
+    longitude_rect = pygame.Rect(
+        latitude_rect.right + field_gap,
+        fields_y,
         field_width,
-
         field_height
-
-    )
+        )
 
 
     if location_input_field == "latitude":
-
-        field_colour = DIM_GREEN
-
-    else:
-
-        field_colour = (
+            latitude_colour = DIM_GREEN
+        longitude_colour = (
             12,
             30,
             18
         )
+    else:
+            latitude_colour = (
+                    12,
+                    30,
+                   18
+            )
+        longitude_colour = DIM_GREEN
 
 
     pygame.draw.rect(
-        canvas,
-        field_colour,
-        latitude_rect,
-        border_radius=4 * SCALE
-    )
+            canvas,
+            latitude_colour,
+            latitude_rect,
+            border_radius=4 * SCALE
+        )
 
 
     pygame.draw.rect(
-        canvas,
-        TEXT_GREEN,
-        latitude_rect,
-        width=1 * SCALE,
-        border_radius=4 * SCALE
-    )
+            canvas,
+            TEXT_GREEN,
+            latitude_rect,
+            width=1 * SCALE,
+            border_radius=4 * SCALE
+        )
 
 
     latitude_label = small_font.render(
-        "LATITUDE",
-        True,
-        TEXT_GREEN
-    )
+            "LATITUDE",
+            True,
+            TEXT_GREEN
+        )
 
 
     canvas.blit(
-        latitude_label,
-        (
-            latitude_rect.x + 7 * SCALE,
-            latitude_rect.y + 3 * SCALE
+            latitude_label,
+            (
+                    latitude_rect.x + 7 * SCALE,
+                    latitude_rect.y + 4 * SCALE
+            )
         )
-    )
 
 
     latitude_value = custom_latitude
 
     if not latitude_value:
-
-        latitude_value = "0"
-
+            latitude_value = "0"
 
     latitude_surface = font.render(
-        latitude_value,
-        True,
-        AIRCRAFT_HIGHLIGHT
-    )
-
+            latitude_value,
+            True,
+            AIRCRAFT_HIGHLIGHT
+        )
 
     canvas.blit(
-        latitude_surface,
-        (
-            latitude_rect.x + 7 * SCALE,
-            latitude_rect.y + 16 * SCALE
+            latitude_surface,
+            (
+                    latitude_rect.x + 7 * SCALE,
+                    latitude_rect.y + 19 * SCALE
+            )
         )
-    )
 
 
     # ========================================================
     # LONGITUDE FIELD
     # ========================================================
 
-    longitude_rect = pygame.Rect(
-
-        menu_x + 185 * SCALE,
-
-        menu_y + 50 * SCALE,
-
-        field_width,
-
-        field_height
-
-    )
-
-
-    if location_input_field == "longitude":
-
-        field_colour = DIM_GREEN
-
-    else:
-
-        field_colour = (
-            12,
-            30,
-            18
-        )
-
-
     pygame.draw.rect(
         canvas,
-        field_colour,
+        longitude_colour,
         longitude_rect,
         border_radius=4 * SCALE
-    )
-
+        )
 
     pygame.draw.rect(
         canvas,
@@ -2509,46 +2533,43 @@ def draw_custom_location_menu():
         longitude_rect,
         width=1 * SCALE,
         border_radius=4 * SCALE
-    )
+        )
 
-
-    longitude_label = small_font.render(
+    longitude_label = small.font.render(
         "LONGITUDE",
         True,
         TEXT_GREEN
-    )
+        )
 
 
     canvas.blit(
-        longitude_label,
-        (
-            longitude_rect.x + 7 * SCALE,
-            longitude_rect.y + 3 * SCALE
+            longitude_label,
+            (
+                    longitude_rect.x + 7 * SCALE,
+                    longitude_rect.y + 4 * SCALE
+            )
         )
-    )
 
 
     longitude_value = custom_longitude
 
     if not longitude_value:
-
-        longitude_value = "0"
+            longitude_value = "0"
 
 
     longitude_surface = font.render(
-        longitude_value,
-        True,
-        AIRCRAFT_HIGHLIGHT
-    )
-
+            longitude_value,
+            True,
+            AIRCRAFT_HIGHLIGHT
+        )
 
     canvas.blit(
-        longitude_surface,
-        (
-            longitude_rect.x + 7 * SCALE,
-            longitude_rect.y + 16 * SCALE
+            longitude_surface,
+            (
+                    longitude_rect.x + 7 * SCALE,
+                    longitude_rect.y + 19 * SCALE
+            )
         )
-    )
 
 
     # ========================================================
@@ -2556,25 +2577,24 @@ def draw_custom_location_menu():
     # ========================================================
 
     if location_error:
-
-        error_surface = small_font.render(
-            location_error,
-            True,
-            (255, 100, 100)
-        )
-
-
-        error_rect = error_surface.get_rect(
-            center=(
-                menu_x + menu_width // 2,
-                menu_y + 105 * SCALE
+            error_surface = small_font.render(
+                location_error,
+                True,
+                (255, 100, 100)
             )
+
+
+    error_rect = error_surface.get_rect(
+            center=(
+                    menu_x + menu_width // 2,
+                    fields_y + field_height + 15 * SCALE
+                )
         )
 
 
-        canvas.blit(
+    canvas.blit(
             error_surface,
-            error_rect
+                error_rect
         )
 
 
@@ -2582,126 +2602,151 @@ def draw_custom_location_menu():
     # KEYPAD
     # ========================================================
 
-    keypad_x = menu_x + 35 * SCALE
-
-    keypad_y = menu_y + 125 * SCALE
-
-
-    key_width = 70 * SCALE
-    key_height = 42 * SCALE
-
-    key_gap = 8 * SCALE
-
-
     keys = [
 
-        ["7", "8", "9"],
+            ["7", "8", "9"],
 
-        ["4", "5", "6"],
+            ["4", "5", "6"],
 
-        ["1", "2", "3"],
+            ["1", "2", "3"],
 
-        ["-", "0", "."],
+            ["-", "0", "."],
 
-    ]
+        ]
 
+    keypad_gap = 7 * SCALE
+
+    keypad_width = menu_width - 60 * SCALE
+
+    key_width = (
+        keypad_width
+        - 2 * keypad_gap
+        ) // 3
+
+    key_height = 48 * SCALE
+
+    keypad_x = (
+        menu_x
+        + (
+            menu_width
+            - keypad_width
+        ) // 2
+        )
+
+    keypad_y = field_y + field_height + 45 * SCALE
 
     for row, key_row in enumerate(keys):
+            for column, key in enumerate(key_row):
 
-        for column, key in enumerate(key_row):
+                    x = (
+                           keypad_x
+                        +
+                        column
+                        *
+                        (
+                                key_width
+                                +
+                                keypad_gap
+                        )
+                    )
 
-            x = (
-                keypad_x
-                +
-                column
-                *
-                (
-                    key_width
-                    +
-                    key_gap
-                )
-            )
-
-            y = (
-                keypad_y
-                +
-                row
-                *
-                (
-                    key_height
-                    +
-                    key_gap
-                )
-            )
+                    y = (
+                        keypad_y
+                        +
+                        row
+                        *
+                        (
+                                key_height
+                                +
+                                keypad_gap
+                        )
+                    )
 
 
             key_rect = pygame.Rect(
-                x,
-                y,
-                key_width,
-                key_height
-            )
+                        x,
+                        y,
+                        key_width,
+                        key_height
+                    )
 
 
-            pygame.draw.rect(
-                canvas,
-                (
-                    10,
-                    25,
-                    15
-                ),
-                key_rect,
-                border_radius=4 * SCALE
-            )
+                    pygame.draw.rect(
+                        canvas,
+                        (
+                                10,
+                                25,
+                                15
+                        ),
+                        key_rect,
+                        border_radius=4 * SCALE
+                    )
 
 
-            pygame.draw.rect(
-                canvas,
-                DIM_GREEN,
-                key_rect,
-                width=1 * SCALE,
-                border_radius=4 * SCALE
-            )
+                    pygame.draw.rect(
+                        canvas,
+                        DIM_GREEN,
+                        key_rect,
+                        width=1 * SCALE,
+                        border_radius=4 * SCALE
+                    )
 
 
-            key_text = font.render(
-                key,
-                True,
-                TEXT_GREEN
-            )
+                    key_text = font.render(
+                        key,
+                        True,
+                        TEXT_GREEN
+                    )
 
 
-            key_text_rect = key_text.get_rect(
-                center=key_rect.center
-            )
+                    key_text_rect = key_text.get_rect(
+                        center=key_rect.center
+                    )
 
 
-            canvas.blit(
-                key_text,
-                key_text_rect
-            )
+                    canvas.blit(
+                        key_text,
+                        key_text_rect
+                    )
 
 
     # ========================================================
     # BACKSPACE
     # ========================================================
 
-    backspace_rect = pygame.Rect(
+    button_gap * SCALE
 
-        keypad_x,
+    bottom_button_width = (
+        keypad_width - button_gap
+        ) // 2
 
+
+        bottom_button_y = (
         keypad_y
-        +
-        4 * (key_height + key_gap),
+        + 4 * (
+            key_height
+            + keypad_gap
+        )
+        )
 
-        103 * SCALE,
 
+        backspace_rect = pygame.Rect(
+            keypad_x,
+        bottom_button_y,
+        bottom_button_width,
         key_height
+        )
 
-    )
+        clear_rect = pygame.Rect(
+        keypad_x
+        + bottom_button_width
+        + button_gap,
+        bottom_button_y,
+        bottom_button_width,
+        key_height
+        )
 
-
-    pygame.draw.rect(
+        pygame.draw.rect(
         canvas,
         (
             10,
@@ -2710,146 +2755,121 @@ def draw_custom_location_menu():
         ),
         backspace_rect,
         border_radius=4 * SCALE
-    )
+        )
+
+        pygame.draw.rect(
+            canvas,
+            DIM_GREEN,
+            backspace_rect,
+            width=1 * SCALE,
+            border_radius=4 * SCALE
+        )
 
 
-    pygame.draw.rect(
-        canvas,
-        DIM_GREEN,
-        backspace_rect,
-        width=1 * SCALE,
-        border_radius=4 * SCALE
-    )
+        backspace_text = small_font.render(
+            "BACKSPACE",
+            True,
+            TEXT_GREEN
+        )
 
 
-    backspace_text = small_font.render(
-        "BACKSPACE",
-        True,
-        TEXT_GREEN
-    )
-
-
-    backspace_text_rect = backspace_text.get_rect(
-        center=backspace_rect.center
-    )
-
-
-    canvas.blit(
-        backspace_text,
-        backspace_text_rect
-    )
+        canvas.blit(
+            backspace_text,
+            backspace_text.get_rect(
+            center=backspace_rect.center
+        )
+        )
 
 
     # ========================================================
     # CLEAR
     # ========================================================
 
-    clear_rect = pygame.Rect(
 
-        keypad_x
-        +
-        111 * SCALE,
-
-        keypad_y
-        +
-        4 * (key_height + key_gap),
-
-        103 * SCALE,
-
-        key_height
-
-    )
+        pygame.draw.rect(
+            canvas,
+            (
+                    10,
+                    25,
+                    15
+            ),
+            clear_rect,
+            border_radius=4 * SCALE
+        )
 
 
-    pygame.draw.rect(
-        canvas,
-        (
-            10,
-            25,
-            15
-        ),
-        clear_rect,
-        border_radius=4 * SCALE
-    )
+        pygame.draw.rect(
+            canvas,
+            DIM_GREEN,
+            clear_rect,
+            width=1 * SCALE,
+            border_radius=4 * SCALE
+        )
 
 
-    pygame.draw.rect(
-        canvas,
-        DIM_GREEN,
-        clear_rect,
-        width=1 * SCALE,
-        border_radius=4 * SCALE
-    )
+        clear_text = small_font.render(
+            "CLEAR",
+            True,
+            TEXT_GREEN
+        )
 
 
-    clear_text = small_font.render(
-        "CLEAR",
-        True,
-        TEXT_GREEN
-    )
-
-
-    clear_text_rect = clear_text.get_rect(
-        center=clear_rect.center
-    )
-
-
-    canvas.blit(
-        clear_text,
-        clear_text_rect
-    )
+        canvas.blit(
+            clear_text,
+            clear_text.get_rect(
+            center=clear_rect.center
+        )
+        )
 
 
     # ========================================================
     # VERIFY BUTTON
     # ========================================================
 
-    verify_rect = pygame.Rect(
+        verify_height = 48 * SCALE
 
-        menu_x + 35 * SCALE,
+        verify_rect = pygame.Rect(
+        keypad_x,
+        menu_y
+        + menu_height
+        - 62 * SCALE,
+        keypad_width,
+        verify_height
+        )
 
-        menu_y + 410 * SCALE,
-
-        250 * SCALE,
-
-        42 * SCALE
-
-    )
-
-
-    pygame.draw.rect(
-        canvas,
-        DIM_GREEN,
-        verify_rect,
-        border_radius=4 * SCALE
-    )
+        pygame.draw.rect(
+            canvas,
+            DIM_GREEN,
+            verify_rect,
+            border_radius=4 * SCALE
+        )
 
 
-    pygame.draw.rect(
-        canvas,
-        TEXT_GREEN,
-        verify_rect,
-        width=1 * SCALE,
-        border_radius=4 * SCALE
-    )
+        pygame.draw.rect(
+            canvas,
+            TEXT_GREEN,
+            verify_rect,
+            width=1 * SCALE,
+            border_radius=4 * SCALE
+        )
 
 
-    verify_text = small_font.render(
-        "VERIFY & USE LOCATION",
-        True,
-        TEXT_GREEN
-    )
+        verify_text = small_font.render(
+            "VERIFY & USE LOCATION",
+            True,
+            TEXT_GREEN
+        )
 
 
-    verify_text_rect = verify_text.get_rect(
-        center=verify_rect.center
-    )
+        verify_text_rect = verify_text.get_rect(
+            center=verify_rect.center
+        )
 
 
-    canvas.blit(
-        verify_text,
-        verify_text_rect
-    )
+        canvas.blit(
+            verify_text,
+            verify_text_rect
+        )
 
 
 # ============================================================
@@ -3398,10 +3418,10 @@ def change_radar_location(
 # ============================================================
 
 DETAIL_PANEL_WIDTH = int(
-    INTERNAL_WIDTH * 0.29
+    INTERNAL_WIDTH * 0.35
 )
 
-DETAIL_PANEL_MARGIN = 16 * SCALE
+DETAIL_PANEL_MARGIN = 12 * SCALE
 
 
 def draw_aircraft_details_panel():
@@ -3516,15 +3536,9 @@ def draw_aircraft_details_panel():
     )
 
     # ========================================================
-    # ICAO24 / SQUAWK
+    # SQUAWK
     # ========================================================
 
-    icao24 = plane.get("icao24")
-
-    if icao24:
-        icao24_text = "ICAO24 " + str(icao24).upper()
-    else:
-        icao24_text = "ICAO24 UNKNOWN"
 
     squawk = plane.get("squawk")
 
@@ -3536,61 +3550,26 @@ def draw_aircraft_details_panel():
     else:
         squawk_text = "UNKNOWN"
 
-    combined_text = (
-        icao24_text
-        + "   SQUAWK "
-        + squawk_text
-    )
-
-    combined_surface = DETAILS_SMALL_FONT.render(
-        combined_text,
+    squawk_surface = DETAILS_SMALL_FONT.render(
+        "SQUAWK " + squawk_text,
         True,
         DIM_GREEN
     )
 
-    # If the combined line is too long, draw the two pieces separately.
-    if combined_surface.get_width() <= panel_width - 28 * SCALE:
-        canvas.blit(
-            combined_surface,
-            (
-                panel_x + 14 * SCALE,
-                panel_y + 38 * SCALE
-            )
+    canvas.blit(
+    squawk_surface,
+    (
+        panel_x + 14 * SCALE,
+                panel_y + 30 * SCALE
         )
-    else:
-        icao_surface = DETAILS_SMALL_FONT.render(
-            icao24_text,
-            True,
-            DIM_GREEN
-        )
-        squawk_surface = DETAILS_SMALL_FONT.render(
-            "SQ " + squawk_text,
-            True,
-            DIM_GREEN
-        )
-
-        canvas.blit(
-            icao_surface,
-            (
-                panel_x + 14 * SCALE,
-                panel_y + 38 * SCALE
-            )
-        )
-
-        canvas.blit(
-            squawk_surface,
-            (
-                panel_x + panel_width - squawk_surface.get_width() - 14 * SCALE,
-                panel_y + 38 * SCALE
-            )
-        )
+    )
 
     # ========================================================
     # CONTENT VIEWPORT
     # ========================================================
 
     content_x = panel_x + 14 * SCALE
-    content_top = panel_y + 68 * SCALE
+    content_top = panel_y + 42 * SCALE
     content_bottom = panel_y + panel_height - 25 * SCALE
     content_height = max(1, content_bottom - content_top)
 
@@ -3712,7 +3691,6 @@ def draw_aircraft_details_panel():
     def add_row(label, value):
         content_items.append(("row", label, str(value)))
 
-    add_header("FLIGHT ROUTE")
     add_row("ROUTE", route_text)
     add_row("AIRLINE", airline_text)
     add_row("REGISTRATION", registration)
@@ -3732,12 +3710,10 @@ def draw_aircraft_details_panel():
         if next_flight:
             add_row("NEXT", rotation_text(next_flight))
 
-    add_header("AIRCRAFT")
-    add_row("TYPE", type_text)
+    add_row("AIRCRAFT TYPE", type_text)
     add_row("MANUFACTURER", manufacturer)
     add_row("COUNTRY", country)
 
-    add_header("LIVE DATA")
     add_row("ALTITUDE", altitude_text)
     add_row("SPEED", speed_text)
     add_row("HEADING", heading_text)
@@ -3799,10 +3775,10 @@ def draw_aircraft_details_panel():
     # CALCULATE CONTENT HEIGHT
     # ========================================================
 
-    header_height = 20 * SCALE
-    label_height = 14 * SCALE
-    value_line_height = 16 * SCALE
-    row_gap = 7 * SCALE
+    header_height = 10 * SCALE
+    label_height = 12 * SCALE
+    value_line_height = 2 * SCALE
+    row_gap = 15 * SCALE
 
     prepared_items = []
     total_content_height = 0
@@ -3816,7 +3792,7 @@ def draw_aircraft_details_panel():
             value = item[2]
             lines = wrap_text(
                 value,
-                DETAILS_SMALL_FONT,
+                DETAIL_FONT_MEDIUM,
                 max_text_width
             )
 
@@ -3889,7 +3865,7 @@ def draw_aircraft_details_panel():
             label = item[1]
             lines = item[2]
 
-            label_surface = DETAILS_SMALL_FONT.render(
+            label_surface = DETAIL_FONT_SMALL.render(
                 label,
                 True,
                 DIM_GREEN
@@ -3907,7 +3883,7 @@ def draw_aircraft_details_panel():
 
             for line in lines:
 
-                value_surface = DETAILS_SMALL_FONT.render(
+                value_surface = DETAIL_FONT_SMALL.render(
                     line,
                     True,
                     TEXT_GREEN
@@ -4016,8 +3992,8 @@ def draw_aircraft_details_panel():
     canvas.blit(
         update_surface,
         (
-            panel_x + 14 * SCALE,
-            panel_y + panel_height - 24 * SCALE
+            panel_x + 12 * SCALE,
+            panel_y + panel_height - 20 * SCALE
         )
     )
 
