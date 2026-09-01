@@ -130,13 +130,13 @@ canvas = pygame.Surface((INTERNAL_WIDTH, INTERNAL_HEIGHT))
 # Change these values to tune the appearance on the 480x320 display.
 FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
-FONT_SMALL_SIZE = 11
-FONT_MEDIUM_SIZE = 15
-FONT_LARGE_SIZE = 18
+FONT_SMALL_SIZE = 18
+FONT_MEDIUM_SIZE = 20
+FONT_LARGE_SIZE = 25
 
-DETAILS_SMALL_SIZE = 10
-DETAILS_MEDIUM_SIZE = 13
-DETAILS_LARGE_SIZE = 17
+DETAILS_SMALL_SIZE = 20
+DETAILS_MEDIUM_SIZE = 25
+DETAILS_LARGE_SIZE = 30
 
 small_font = pygame.font.Font(FONT_PATH, FONT_SMALL_SIZE)
 font = pygame.font.Font(FONT_PATH, FONT_MEDIUM_SIZE)
@@ -157,13 +157,13 @@ DETAILS_LARGE_FONT = DETAIL_FONT_LARGE
 # RADAR POSITION
 # ============================================================
 
-RADAR_RADIUS = 105 * SCALE
+RADAR_RADIUS = 125 * SCALE
 
 RADAR_CENTER = (INTERNAL_WIDTH // 2, INTERNAL_HEIGHT // 2)
 
 RADAR_CENTER_NORMAL_X = INTERNAL_WIDTH // 2
 
-RADAR_CENTER_SELECTED_X = int(INTERNAL_WIDTH * 0.30)
+RADAR_CENTER_SELECTED_X = int(INTERNAL_WIDTH * 0.77)
 
 RADAR_CENTER_Y = int(INTERNAL_HEIGHT * 0.50)
 
@@ -770,9 +770,9 @@ def draw_compass():
 
         angle = math.radians(bearing)
 
-        x = cx + math.sin(angle) * (RADAR_RADIUS + 25 * SCALE)
+        x = cx + math.sin(angle) * (RADAR_RADIUS + 10 * SCALE)
 
-        y = cy - math.cos(angle) * (RADAR_RADIUS + 25 * SCALE)
+        y = cy - math.cos(angle) * (RADAR_RADIUS + 10 * SCALE)
 
         text = large_font.render(label, True, TEXT_GREEN)
 
@@ -1958,9 +1958,9 @@ def change_radar_location(location_name, latitude=None, longitude=None):
 # AIRCRAFT DETAILS PANEL
 # ============================================================
 
-DETAIL_PANEL_WIDTH = INTERNAL_WIDTH - (12 * SCALE)
+DETAIL_PANEL_WIDTH = int(INTERNAL_WIDTH * 0.31)
 
-DETAIL_PANEL_MARGIN = 6 * SCALE
+DETAIL_PANEL_MARGIN = 4 * SCALE
 
 
 def draw_aircraft_details_panel():
