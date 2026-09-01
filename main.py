@@ -22,8 +22,8 @@ last_wifi_check = time.time()
 
 # CONFIGURATION
 
-WINDOW_WIDTH = 1200
-WINDOW_HEIGHT = 900
+WINDOW_WIDTH = 480
+WINDOW_HEIGHT = 320
 
 # Render at higher resolution and downsample.
 SCALE = 2
@@ -126,18 +126,29 @@ canvas = pygame.Surface((INTERNAL_WIDTH, INTERNAL_HEIGHT))
 
 # FONTS
 
-DETAIL_FONT_MEDIUM = pygame.font.Font(
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15
-)
+# All text continues to use the same DejaVu Sans font.
+# Change these values to tune the appearance on the 480x320 display.
+FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
-# Keep the existing font variable names so that the rest of the
-# program does not need to be changed. All Pygame text now uses
-# the same DejaVu Sans 15px font.
-font = DETAIL_FONT_MEDIUM
-small_font = DETAIL_FONT_MEDIUM
-large_font = DETAIL_FONT_MEDIUM
-DETAILS_SMALL_FONT = DETAIL_FONT_MEDIUM
-DETAILS_LARGE_FONT = DETAIL_FONT_MEDIUM
+FONT_SMALL_SIZE = 11
+FONT_MEDIUM_SIZE = 15
+FONT_LARGE_SIZE = 18
+
+DETAILS_SMALL_SIZE = 10
+DETAILS_MEDIUM_SIZE = 13
+DETAILS_LARGE_SIZE = 17
+
+small_font = pygame.font.Font(FONT_PATH, FONT_SMALL_SIZE)
+font = pygame.font.Font(FONT_PATH, FONT_MEDIUM_SIZE)
+large_font = pygame.font.Font(FONT_PATH, FONT_LARGE_SIZE)
+
+DETAIL_FONT_SMALL = pygame.font.Font(FONT_PATH, DETAILS_SMALL_SIZE)
+DETAIL_FONT_MEDIUM = pygame.font.Font(FONT_PATH, DETAILS_MEDIUM_SIZE)
+DETAIL_FONT_LARGE = pygame.font.Font(FONT_PATH, DETAILS_LARGE_SIZE)
+
+DETAILS_SMALL_FONT = DETAIL_FONT_SMALL
+DETAILS_MEDIUM_FONT = DETAIL_FONT_MEDIUM
+DETAILS_LARGE_FONT = DETAIL_FONT_LARGE
 
 
 # RADAR
@@ -146,15 +157,15 @@ DETAILS_LARGE_FONT = DETAIL_FONT_MEDIUM
 # RADAR POSITION
 # ============================================================
 
-RADAR_RADIUS = 350 * SCALE
+RADAR_RADIUS = 105 * SCALE
 
 RADAR_CENTER = (INTERNAL_WIDTH // 2, INTERNAL_HEIGHT // 2)
 
 RADAR_CENTER_NORMAL_X = INTERNAL_WIDTH // 2
 
-RADAR_CENTER_SELECTED_X = int(INTERNAL_WIDTH * 0.65)
+RADAR_CENTER_SELECTED_X = int(INTERNAL_WIDTH * 0.30)
 
-RADAR_CENTER_Y = INTERNAL_HEIGHT // 2
+RADAR_CENTER_Y = int(INTERNAL_HEIGHT * 0.50)
 
 
 def update_radar_layout():
@@ -938,8 +949,11 @@ def draw_aircraft():
         # callsign was positioned.
 
         box_x = int(x + 18 * SCALE)
-
         box_y = int(y - 14 * SCALE)
+
+        # Keep labels visible on the smaller 480x320 display.
+        box_x = max(2 * SCALE, min(box_x, INTERNAL_WIDTH - box_width - 2 * SCALE))
+        box_y = max(2 * SCALE, min(box_y, INTERNAL_HEIGHT - box_height - 2 * SCALE))
 
         box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
 
@@ -1037,7 +1051,7 @@ def draw_radar_centre():
 
 # COLOR WHEEL
 
-COLOR_WHEEL_RADIUS = 68 * SCALE
+COLOR_WHEEL_RADIUS = 62 * SCALE
 COLOR_WHEEL_SIZE = COLOR_WHEEL_RADIUS * 2
 
 color_wheel_surface = None
@@ -1242,6 +1256,8 @@ def keypad_input(character):
 # ============================================================
 
 MENU_BUTTON_SIZE = 42 * SCALE
+# Invisible touch area around the menu button. The visible button remains the same size.
+MENU_BUTTON_HITBOX_SIZE = 58 * SCALE
 MENU_MARGIN = 12 * SCALE
 
 MENU_WIDTH = 210 * SCALE
@@ -1496,160 +1512,69 @@ def get_custom_keypad_rects():
 
 
 def draw_custom_location_menu():
-
-    menu_x = MENU_X
-
-    menu_y = MENU_Y + MENU_BUTTON_SIZE + 6 * SCALE
-
-    menu_width = 360 * SCALE
-    menu_height = 470 * SCALE
+    # Full-screen custom location entry. This is intentionally much larger
+    # than the normal menu so coordinate entry is reliable on the touchscreen.
+    menu_x = 6 * SCALE
+    menu_y = 6 * SCALE
+    menu_width = INTERNAL_WIDTH - 12 * SCALE
+    menu_height = INTERNAL_HEIGHT - 12 * SCALE
 
     menu_rect = pygame.Rect(menu_x, menu_y, menu_width, menu_height)
 
-    # --------------------------------------------------------
-    # BACKGROUND
-    # --------------------------------------------------------
-
     pygame.draw.rect(canvas, PANEL_BACKGROUND, menu_rect, border_radius=6 * SCALE)
-
     pygame.draw.rect(
         canvas, DIM_GREEN, menu_rect, width=1 * SCALE, border_radius=6 * SCALE
     )
 
-    # --------------------------------------------------------
-    # BACK
-    # --------------------------------------------------------
-
-    back_rect = pygame.Rect(
-        menu_x + 10 * SCALE, menu_y + 8 * SCALE, 70 * SCALE, 32 * SCALE
-    )
-
+    # Header
+    back_rect = pygame.Rect(menu_x + 6 * SCALE, menu_y + 5 * SCALE, 70 * SCALE, 30 * SCALE)
     back_text = small_font.render("< BACK", True, TEXT_GREEN)
-
-    canvas.blit(back_text, (menu_x + 14 * SCALE, menu_y + 10 * SCALE))
-
-    # --------------------------------------------------------
-    # TITLE
-    # --------------------------------------------------------
+    canvas.blit(back_text, (back_rect.x + 5 * SCALE, back_rect.y + 5 * SCALE))
 
     title = small_font.render("ENTER LOCATION", True, TEXT_GREEN)
-
     title_rect = title.get_rect(
-        top=menu_y + 10 * SCALE, right=menu_x + menu_width - 12 * SCALE
+        top=menu_y + 8 * SCALE, right=menu_x + menu_width - 8 * SCALE
     )
-
     canvas.blit(title, title_rect)
 
-    # ========================================================
-    # LATITUDE FIELD
-    # ========================================================
+    # Coordinate fields
+    field_width = 215 * SCALE
+    field_height = 40 * SCALE
+    fields_y = menu_y + 42 * SCALE
 
-    field_width = 150 * SCALE
-    field_height = 42 * SCALE
-
-    latitude_rect = pygame.Rect(
-        menu_x + 15 * SCALE, menu_y + 50 * SCALE, field_width, field_height
-    )
-
-    if location_input_field == "latitude":
-
-        field_colour = DIM_GREEN
-
-    else:
-
-        field_colour = (12, 30, 18)
-
-    pygame.draw.rect(canvas, field_colour, latitude_rect, border_radius=4 * SCALE)
-
-    pygame.draw.rect(
-        canvas, TEXT_GREEN, latitude_rect, width=1 * SCALE, border_radius=4 * SCALE
-    )
-
-    latitude_label = small_font.render("LATITUDE", True, TEXT_GREEN)
-
-    canvas.blit(
-        latitude_label, (latitude_rect.x + 7 * SCALE, latitude_rect.y + 3 * SCALE)
-    )
-
-    latitude_value = custom_latitude
-
-    if not latitude_value:
-
-        latitude_value = "0"
-
-    latitude_surface = font.render(latitude_value, True, AIRCRAFT_HIGHLIGHT)
-
-    canvas.blit(
-        latitude_surface, (latitude_rect.x + 7 * SCALE, latitude_rect.y + 16 * SCALE)
-    )
-
-    # ========================================================
-    # LONGITUDE FIELD
-    # ========================================================
-
+    latitude_rect = pygame.Rect(menu_x + 10 * SCALE, fields_y, field_width, field_height)
     longitude_rect = pygame.Rect(
-        menu_x + 185 * SCALE, menu_y + 50 * SCALE, field_width, field_height
+        menu_x + menu_width - field_width - 10 * SCALE, fields_y, field_width, field_height
     )
 
-    if location_input_field == "longitude":
-
-        field_colour = DIM_GREEN
-
-    else:
-
-        field_colour = (12, 30, 18)
-
-    pygame.draw.rect(canvas, field_colour, longitude_rect, border_radius=4 * SCALE)
-
-    pygame.draw.rect(
-        canvas, TEXT_GREEN, longitude_rect, width=1 * SCALE, border_radius=4 * SCALE
-    )
-
-    longitude_label = small_font.render("LONGITUDE", True, TEXT_GREEN)
-
-    canvas.blit(
-        longitude_label, (longitude_rect.x + 7 * SCALE, longitude_rect.y + 3 * SCALE)
-    )
-
-    longitude_value = custom_longitude
-
-    if not longitude_value:
-
-        longitude_value = "0"
-
-    longitude_surface = font.render(longitude_value, True, AIRCRAFT_HIGHLIGHT)
-
-    canvas.blit(
-        longitude_surface, (longitude_rect.x + 7 * SCALE, longitude_rect.y + 16 * SCALE)
-    )
-
-    # ========================================================
-    # ERROR
-    # ========================================================
-
-    if location_error:
-
-        error_surface = small_font.render(location_error, True, (255, 100, 100))
-
-        error_rect = error_surface.get_rect(
-            center=(menu_x + menu_width // 2, menu_y + 105 * SCALE)
+    def draw_field(rect, label, value, active):
+        field_colour = DIM_GREEN if active else (12, 30, 18)
+        pygame.draw.rect(canvas, field_colour, rect, border_radius=4 * SCALE)
+        pygame.draw.rect(
+            canvas, TEXT_GREEN, rect, width=1 * SCALE, border_radius=4 * SCALE
         )
+        label_surface = small_font.render(label, True, TEXT_GREEN)
+        canvas.blit(label_surface, (rect.x + 7 * SCALE, rect.y + 3 * SCALE))
+        value_text = value if value else "0"
+        value_surface = font.render(value_text, True, AIRCRAFT_HIGHLIGHT)
+        canvas.blit(value_surface, (rect.x + 7 * SCALE, rect.y + 17 * SCALE))
 
+    draw_field(
+        latitude_rect, "LATITUDE", custom_latitude, location_input_field == "latitude"
+    )
+    draw_field(
+        longitude_rect, "LONGITUDE", custom_longitude, location_input_field == "longitude"
+    )
+
+    # Error line
+    if location_error:
+        error_surface = small_font.render(location_error, True, (255, 100, 100))
+        error_rect = error_surface.get_rect(
+            center=(menu_x + menu_width // 2, menu_y + 87 * SCALE)
+        )
         canvas.blit(error_surface, error_rect)
 
-    # ========================================================
-    # KEYPAD
-    # ========================================================
-
-    keypad_x = menu_x + 35 * SCALE
-
-    keypad_y = menu_y + 125 * SCALE
-
-    key_width = 70 * SCALE
-    key_height = 42 * SCALE
-
-    key_gap = 8 * SCALE
-
+    # Numeric keypad
     keys = [
         ["7", "8", "9"],
         ["4", "5", "6"],
@@ -1657,95 +1582,58 @@ def draw_custom_location_menu():
         ["-", "0", "."],
     ]
 
+    keypad_x = menu_x + 78 * SCALE
+    keypad_y = menu_y + 94 * SCALE
+    key_gap = 5 * SCALE
+    key_width = 90 * SCALE
+    key_height = 32 * SCALE
+
     for row, key_row in enumerate(keys):
-
         for column, key in enumerate(key_row):
-
             x = keypad_x + column * (key_width + key_gap)
-
             y = keypad_y + row * (key_height + key_gap)
-
             key_rect = pygame.Rect(x, y, key_width, key_height)
 
-            pygame.draw.rect(canvas, (10, 25, 15), key_rect, border_radius=4 * SCALE)
-
+            pygame.draw.rect(
+                canvas, (10, 25, 15), key_rect, border_radius=4 * SCALE
+            )
             pygame.draw.rect(
                 canvas, DIM_GREEN, key_rect, width=1 * SCALE, border_radius=4 * SCALE
             )
 
             key_text = font.render(key, True, TEXT_GREEN)
-
             key_text_rect = key_text.get_rect(center=key_rect.center)
-
             canvas.blit(key_text, key_text_rect)
 
-    # ========================================================
-    # BACKSPACE
-    # ========================================================
+    # Bottom controls
+    action_y = menu_y + 230 * SCALE
+    action_height = 34 * SCALE
 
-    backspace_rect = pygame.Rect(
-        keypad_x, keypad_y + 4 * (key_height + key_gap), 103 * SCALE, key_height
+    backspace_rect = pygame.Rect(keypad_x, action_y, 132 * SCALE, action_height)
+    clear_rect = pygame.Rect(
+        keypad_x + 138 * SCALE, action_y, 132 * SCALE, action_height
     )
 
-    pygame.draw.rect(canvas, (10, 25, 15), backspace_rect, border_radius=4 * SCALE)
-
-    pygame.draw.rect(
-        canvas, DIM_GREEN, backspace_rect, width=1 * SCALE, border_radius=4 * SCALE
-    )
+    for rect in (backspace_rect, clear_rect):
+        pygame.draw.rect(canvas, (10, 25, 15), rect, border_radius=4 * SCALE)
+        pygame.draw.rect(
+            canvas, DIM_GREEN, rect, width=1 * SCALE, border_radius=4 * SCALE
+        )
 
     backspace_text = small_font.render("BACKSPACE", True, TEXT_GREEN)
-
-    backspace_text_rect = backspace_text.get_rect(center=backspace_rect.center)
-
-    canvas.blit(backspace_text, backspace_text_rect)
-
-    # ========================================================
-    # CLEAR
-    # ========================================================
-
-    clear_rect = pygame.Rect(
-        keypad_x + 111 * SCALE,
-        keypad_y + 4 * (key_height + key_gap),
-        103 * SCALE,
-        key_height,
-    )
-
-    pygame.draw.rect(canvas, (10, 25, 15), clear_rect, border_radius=4 * SCALE)
-
-    pygame.draw.rect(
-        canvas, DIM_GREEN, clear_rect, width=1 * SCALE, border_radius=4 * SCALE
-    )
-
     clear_text = small_font.render("CLEAR", True, TEXT_GREEN)
-
-    clear_text_rect = clear_text.get_rect(center=clear_rect.center)
-
-    canvas.blit(clear_text, clear_text_rect)
-
-    # ========================================================
-    # VERIFY BUTTON
-    # ========================================================
+    canvas.blit(backspace_text, backspace_text.get_rect(center=backspace_rect.center))
+    canvas.blit(clear_text, clear_text.get_rect(center=clear_rect.center))
 
     verify_rect = pygame.Rect(
-        menu_x + 35 * SCALE, menu_y + 410 * SCALE, 250 * SCALE, 42 * SCALE
+        menu_x + 105 * SCALE, menu_y + 269 * SCALE, 258 * SCALE, 30 * SCALE
     )
-
     pygame.draw.rect(canvas, DIM_GREEN, verify_rect, border_radius=4 * SCALE)
-
     pygame.draw.rect(
         canvas, TEXT_GREEN, verify_rect, width=1 * SCALE, border_radius=4 * SCALE
     )
-
     verify_text = small_font.render("VERIFY & USE LOCATION", True, TEXT_GREEN)
-
-    verify_text_rect = verify_text.get_rect(center=verify_rect.center)
-
-    canvas.blit(verify_text, verify_text_rect)
-
-
-# ============================================================
-# COLOUR MENU
-# ============================================================
+    canvas.blit(verify_text, verify_text.get_rect(center=verify_rect.center))
 
 
 def draw_colour_menu():
@@ -2070,9 +1958,9 @@ def change_radar_location(location_name, latitude=None, longitude=None):
 # AIRCRAFT DETAILS PANEL
 # ============================================================
 
-DETAIL_PANEL_WIDTH = int(INTERNAL_WIDTH * 0.29)
+DETAIL_PANEL_WIDTH = INTERNAL_WIDTH - (12 * SCALE)
 
-DETAIL_PANEL_MARGIN = 16 * SCALE
+DETAIL_PANEL_MARGIN = 6 * SCALE
 
 
 def draw_aircraft_details_panel():
@@ -2093,9 +1981,9 @@ def draw_aircraft_details_panel():
     # ========================================================
 
     panel_x = DETAIL_PANEL_MARGIN
-    panel_y = 70 * SCALE
+    panel_y = 38 * SCALE
     panel_width = DETAIL_PANEL_WIDTH
-    panel_height = INTERNAL_HEIGHT - panel_y - 45 * SCALE
+    panel_height = INTERNAL_HEIGHT - panel_y - 6 * SCALE
 
     panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
 
@@ -2188,8 +2076,8 @@ def draw_aircraft_details_panel():
     # ========================================================
 
     content_x = panel_x + 14 * SCALE
-    content_top = panel_y + 68 * SCALE
-    content_bottom = panel_y + panel_height - 25 * SCALE
+    content_top = panel_y + 62 * SCALE
+    content_bottom = panel_y + panel_height - 22 * SCALE
     content_height = max(1, content_bottom - content_top)
 
     # ========================================================
@@ -2394,10 +2282,10 @@ def draw_aircraft_details_panel():
     # CALCULATE CONTENT HEIGHT
     # ========================================================
 
-    header_height = 20 * SCALE
-    label_height = 14 * SCALE
-    value_line_height = 16 * SCALE
-    row_gap = 7 * SCALE
+    header_height = 18 * SCALE
+    label_height = 13 * SCALE
+    value_line_height = 14 * SCALE
+    row_gap = 5 * SCALE
 
     prepared_items = []
     total_content_height = 0
@@ -2521,7 +2409,7 @@ def draw_aircraft_details_panel():
     canvas.set_clip(panel_rect)
 
     canvas.blit(
-        update_surface, (panel_x + 14 * SCALE, panel_y + panel_height - 24 * SCALE)
+        update_surface, (panel_x + 14 * SCALE, panel_y + panel_height - 20 * SCALE)
     )
 
     canvas.set_clip(status_clip)
@@ -2541,9 +2429,9 @@ def handle_details_click(mouse_pos):
     mouse_x, mouse_y = mouse_pos
 
     panel_x = DETAIL_PANEL_MARGIN
-    panel_y = 70 * SCALE
+    panel_y = 38 * SCALE
     panel_width = DETAIL_PANEL_WIDTH
-    panel_height = INTERNAL_HEIGHT - panel_y - 45 * SCALE
+    panel_height = INTERNAL_HEIGHT - panel_y - 6 * SCALE
 
     panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
 
@@ -2552,7 +2440,7 @@ def handle_details_click(mouse_pos):
     # --------------------------------------------------------
 
     close_rect = pygame.Rect(
-        panel_x + panel_width - 38 * SCALE, panel_y + 10 * SCALE, 28 * SCALE, 28 * SCALE
+        panel_x + panel_width - 46 * SCALE, panel_y + 4 * SCALE, 40 * SCALE, 40 * SCALE
     )
 
     if close_rect.collidepoint(mouse_x, mouse_y):
@@ -2613,9 +2501,9 @@ def handle_details_motion(mouse_pos):
 
     # Only scroll while the pointer/finger is within the panel.
     panel_x = DETAIL_PANEL_MARGIN
-    panel_y = 70 * SCALE
+    panel_y = 38 * SCALE
     panel_width = DETAIL_PANEL_WIDTH
-    panel_height = INTERNAL_HEIGHT - panel_y - 45 * SCALE
+    panel_height = INTERNAL_HEIGHT - panel_y - 6 * SCALE
 
     panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
 
@@ -2655,7 +2543,6 @@ def handle_details_release():
 
 
 def handle_custom_location_click(mouse_pos):
-
     global menu_page
     global custom_latitude
     global custom_longitude
@@ -2665,70 +2552,38 @@ def handle_custom_location_click(mouse_pos):
 
     mouse_x, mouse_y = mouse_pos
 
-    menu_x = MENU_X
+    menu_x = 6 * SCALE
+    menu_y = 6 * SCALE
+    menu_width = INTERNAL_WIDTH - 12 * SCALE
 
-    menu_y = MENU_Y + MENU_BUTTON_SIZE + 6 * SCALE
-
-    menu_width = 360 * SCALE
-
-    # ========================================================
-    # BACK
-    # ========================================================
-
-    back_rect = pygame.Rect(menu_x, menu_y, 80 * SCALE, 40 * SCALE)
-
+    # Back
+    back_rect = pygame.Rect(menu_x + 2 * SCALE, menu_y + 2 * SCALE, 82 * SCALE, 36 * SCALE)
     if back_rect.collidepoint(mouse_x, mouse_y):
-
         menu_page = "location"
-
         location_error = ""
-
         return True
 
-    # ========================================================
-    # LATITUDE FIELD
-    # ========================================================
+    # Coordinate fields
+    field_width = 215 * SCALE
+    field_height = 40 * SCALE
+    fields_y = menu_y + 42 * SCALE
 
-    latitude_rect = pygame.Rect(
-        menu_x + 15 * SCALE, menu_y + 50 * SCALE, 150 * SCALE, 42 * SCALE
+    latitude_rect = pygame.Rect(menu_x + 10 * SCALE, fields_y, field_width, field_height)
+    longitude_rect = pygame.Rect(
+        menu_x + menu_width - field_width - 10 * SCALE, fields_y, field_width, field_height
     )
 
     if latitude_rect.collidepoint(mouse_x, mouse_y):
-
         location_input_field = "latitude"
-
         location_error = ""
-
         return True
-
-    # ========================================================
-    # LONGITUDE FIELD
-    # ========================================================
-
-    longitude_rect = pygame.Rect(
-        menu_x + 185 * SCALE, menu_y + 50 * SCALE, 150 * SCALE, 42 * SCALE
-    )
 
     if longitude_rect.collidepoint(mouse_x, mouse_y):
-
         location_input_field = "longitude"
-
         location_error = ""
-
         return True
 
-    # ========================================================
-    # KEYPAD
-    # ========================================================
-
-    keypad_x = menu_x + 35 * SCALE
-
-    keypad_y = menu_y + 125 * SCALE
-
-    key_width = 70 * SCALE
-    key_height = 42 * SCALE
-    key_gap = 8 * SCALE
-
+    # Numeric keypad
     keys = [
         ["7", "8", "9"],
         ["4", "5", "6"],
@@ -2736,96 +2591,58 @@ def handle_custom_location_click(mouse_pos):
         ["-", "0", "."],
     ]
 
+    keypad_x = menu_x + 78 * SCALE
+    keypad_y = menu_y + 94 * SCALE
+    key_gap = 5 * SCALE
+    key_width = 90 * SCALE
+    key_height = 32 * SCALE
+
     for row, key_row in enumerate(keys):
-
         for column, key in enumerate(key_row):
-
             x = keypad_x + column * (key_width + key_gap)
-
             y = keypad_y + row * (key_height + key_gap)
-
             key_rect = pygame.Rect(x, y, key_width, key_height)
-
             if key_rect.collidepoint(mouse_x, mouse_y):
-
                 keypad_input(key)
-
                 return True
 
-    # ========================================================
-    # BACKSPACE
-    # ========================================================
+    # Bottom controls
+    action_y = menu_y + 230 * SCALE
+    action_height = 34 * SCALE
 
-    backspace_rect = pygame.Rect(
-        keypad_x, keypad_y + 4 * (key_height + key_gap), 103 * SCALE, key_height
+    backspace_rect = pygame.Rect(keypad_x, action_y, 132 * SCALE, action_height)
+    clear_rect = pygame.Rect(
+        keypad_x + 138 * SCALE, action_y, 132 * SCALE, action_height
     )
 
     if backspace_rect.collidepoint(mouse_x, mouse_y):
-
         keypad_input("BACKSPACE")
-
         return True
-
-    # ========================================================
-    # CLEAR
-    # ========================================================
-
-    clear_rect = pygame.Rect(
-        keypad_x + 111 * SCALE,
-        keypad_y + 4 * (key_height + key_gap),
-        103 * SCALE,
-        key_height,
-    )
 
     if clear_rect.collidepoint(mouse_x, mouse_y):
-
         keypad_input("CLEAR")
-
         return True
 
-    # ========================================================
-    # VERIFY
-    # ========================================================
-
+    # Verify
     verify_rect = pygame.Rect(
-        menu_x + 35 * SCALE, menu_y + 410 * SCALE, 250 * SCALE, 42 * SCALE
+        menu_x + 105 * SCALE, menu_y + 269 * SCALE, 258 * SCALE, 30 * SCALE
     )
 
     if verify_rect.collidepoint(mouse_x, mouse_y):
-
         valid, error = validate_coordinates(custom_latitude, custom_longitude)
-
         if not valid:
-
             location_error = error
-
             return True
 
-        # ----------------------------------------------------
-        # Convert to floating point
-        # ----------------------------------------------------
-
         latitude = float(custom_latitude)
-
         longitude = float(custom_longitude)
-
-        # ----------------------------------------------------
-        # Apply location
-        # ----------------------------------------------------
-
         change_radar_location("CUSTOM LOCATION", latitude, longitude)
 
-        # ----------------------------------------------------
-        # Return to main menu
-        # ----------------------------------------------------
-
         menu_page = "main"
-
         location_error = ""
-
         return True
 
-    return False
+    return True
 
 
 # ============================================================
@@ -2851,7 +2668,12 @@ def handle_menu_click(mouse_pos):
     # MENU BUTTON
     # --------------------------------------------------------
 
-    button_rect = pygame.Rect(MENU_X, MENU_Y, MENU_BUTTON_SIZE, MENU_BUTTON_SIZE)
+    button_rect = pygame.Rect(
+        MENU_X - (MENU_BUTTON_HITBOX_SIZE - MENU_BUTTON_SIZE) // 2,
+        MENU_Y - (MENU_BUTTON_HITBOX_SIZE - MENU_BUTTON_SIZE) // 2,
+        MENU_BUTTON_HITBOX_SIZE,
+        MENU_BUTTON_HITBOX_SIZE,
+    )
 
     if button_rect.collidepoint(mouse_x, mouse_y):
 
