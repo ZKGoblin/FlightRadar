@@ -440,221 +440,154 @@ def _connect_wifi_worker(
     try:
 
         print()
-        print("==============================")
+        print("========================================")
         print("STARTING WIFI CONNECTION")
-        print("==============================")
         print("SSID:", repr(ssid))
-        print("==============================")
-
-        # ----------------------------------------------------
-        # BUILD NMCLI COMMAND
-        # ----------------------------------------------------
-        #
-        # Do not specify WPA2, WPA3, WPA-PSK, SAE, etc.
-        #
-        # NetworkManager determines the security type itself,
-        # just like when connecting through the Raspberry Pi
-        # desktop.
-        #
-
-        if password:
-
-            command = [
-                "nmcli",
-                "device",
-                "wifi",
-                "connect",
-                ssid,
-                "password",
-                password
-            ]
-
-        else:
-
-            command = [
-                "nmcli",
-                "device",
-                "wifi",
-                "connect",
-                ssid
-            ]
-
-        print("Running nmcli connection...")
+        print("PASSWORD LENGTH:", len(password))
+        print("========================================")
 
         wifi_status = "CONNECTING..."
 
+        # ----------------------------------------------------
+        # Build the exact same command that works when typed
+        # manually into the Raspberry Pi terminal.
+        #
+        # shlex.quote() safely handles spaces and special
+        # characters in the SSID/password.
+        # ----------------------------------------------------
+
+        import shlex
+
+        if password:
+
+            command = (
+                "nmcli device wifi connect "
+                + shlex.quote(ssid)
+                + " password "
+                + shlex.quote(password)
+            )
+
+        else:
+
+            command = (
+                "nmcli device wifi connect "
+                + shlex.quote(ssid)
+            )
+
+        print(
+            "Running NetworkManager connection command..."
+        )
+
         result = subprocess.run(
             command,
+            shell=True,
             capture_output=True,
             text=True,
             timeout=30
         )
 
-        stdout = result.stdout.strip()
-        stderr = result.stderr.strip()
+        print(
+            "RETURN CODE:",
+            result.returncode
+        )
 
-        print("nmcli return code:", result.returncode)
+        print(
+            "STDOUT:",
+            repr(result.stdout)
+        )
 
-        if stdout:
-            print("nmcli output:", stdout)
-
-        if stderr:
-            print("nmcli error:", stderr)
+        print(
+            "STDERR:",
+            repr(result.stderr)
+        )
 
         # ----------------------------------------------------
-        # NMCLI FAILED
+        # FAILED
         # ----------------------------------------------------
 
         if result.returncode != 0:
 
             error_text = (
-                stderr
+                result.stderr.strip()
                 or
-                stdout
-                or
-                "UNKNOWN ERROR"
+                result.stdout.strip()
             )
 
-            print()
-            print("==============================")
-            print("WIFI CONNECTION FAILED")
-            print("==============================")
-            print(error_text)
-            print("==============================")
-            print()
-
-            # Give the user a useful message.
-            error_lower = error_text.lower()
+            print(
+                "Wi-Fi connection failed:",
+                error_text
+            )
 
             if (
+                "Secrets were required"
+                in error_text
+                or
                 "incorrect password"
-                in error_lower
-                or
-                "secrets were required"
-                in error_lower
-                or
-                "password" in error_lower
-                and
-                "invalid" in error_lower
+                in error_text.lower()
             ):
 
-                wifi_error = "INCORRECT PASSWORD"
+                wifi_error = (
+                    "INCORRECT PASSWORD"
+                )
 
             elif (
-                "no network with ssid"
-                in error_lower
+                "No network with SSID"
+                in error_text
             ):
 
-                wifi_error = "NETWORK NOT FOUND"
-
-            elif (
-                "timeout"
-                in error_lower
-            ):
-
-                wifi_error = "CONNECTION TIMED OUT"
+                wifi_error = (
+                    "NETWORK NO LONGER AVAILABLE"
+                )
 
             else:
 
-                wifi_error = "UNABLE TO CONNECT"
+                wifi_error = (
+                    "UNABLE TO CONNECT"
+                )
 
             connection_result = False
 
             return
 
         # ----------------------------------------------------
-        # NMCLI ACCEPTED THE CONNECTION
+        # WIFI CONNECTED
         # ----------------------------------------------------
 
-        print()
-        print("nmcli accepted the connection.")
-        print("Waiting for Wi-Fi to become fully connected...")
-        print()
+        wifi_status = "CHECKING WIFI..."
 
-        wifi_status = "CONNECTING..."
-
-        # Give NetworkManager time to finish activating
-        # the connection.
-        #
-        # 30 attempts x 0.5 seconds = 15 seconds.
-        #
-
-        for attempt in range(30):
+        for _ in range(20):
 
             if is_wifi_connected():
-
-                print(
-                    "Wi-Fi connected after",
-                    (attempt + 1) * 0.5,
-                    "seconds."
-                )
 
                 wifi_status = (
                     "CHECKING INTERNET..."
                 )
 
-                # ------------------------------------------------
-                # INTERNET CHECK
-                # ------------------------------------------------
-
                 if is_internet_connected():
-
-                    print("Internet connection confirmed.")
 
                     wifi_status = "CONNECTED"
 
                     connection_result = True
 
+                    print(
+                        "WIFI AND INTERNET CONNECTED."
+                    )
+
                     return
-
-                print(
-                    "Wi-Fi connected, but internet "
-                    "is not available yet."
-                )
-
-            else:
-
-                print(
-                    "Waiting for Wi-Fi connection..."
-                )
 
             time.sleep(0.5)
 
         # ----------------------------------------------------
-        # WIFI CONNECTED BUT NO INTERNET
+        # WIFI BUT NO INTERNET
         # ----------------------------------------------------
 
-        if is_wifi_connected():
-
-            print(
-                "Wi-Fi connected, but internet "
-                "connection could not be confirmed."
-            )
-
-            wifi_error = (
-                "WIFI CONNECTED - NO INTERNET"
-            )
-
-        else:
-
-            print(
-                "NetworkManager reported success, "
-                "but Wi-Fi is not connected."
-            )
-
-            wifi_error = (
-                "CONNECTION FAILED"
-            )
+        wifi_error = (
+            "WIFI CONNECTED - NO INTERNET"
+        )
 
         connection_result = False
 
     except subprocess.TimeoutExpired:
-
-        print()
-        print("==============================")
-        print("WIFI CONNECTION TIMED OUT")
-        print("==============================")
-        print()
 
         wifi_error = (
             "CONNECTION TIMED OUT"
@@ -664,13 +597,10 @@ def _connect_wifi_worker(
 
     except Exception as error:
 
-        print()
-        print("==============================")
-        print("WIFI CONNECTION ERROR")
-        print("==============================")
-        print(error)
-        print("==============================")
-        print()
+        print(
+            "Wi-Fi connection error:",
+            error
+        )
 
         wifi_error = (
             "CONNECTION FAILED"
