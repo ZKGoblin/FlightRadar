@@ -186,9 +186,7 @@ keyboard_shifted = True
 # ============================================================
 
 def is_wifi_connected():
-
     try:
-
         result = subprocess.run(
             [
                 "nmcli",
@@ -217,20 +215,14 @@ def is_wifi_connected():
 
             if (
                 device_type == "wifi"
-                and
-                state == "connected"
+                and state == "connected"
             ):
                 return True
 
         return False
 
     except Exception as error:
-
-        print(
-            "Wi-Fi status error:",
-            error
-        )
-
+        print("Wi-Fi status error:", error)
         return False
 
 
@@ -431,47 +423,262 @@ def _connect_wifi_worker(ssid, password):
     global connecting, wifi_status, wifi_error, connection_result
 
     try:
-        print(f"Connecting to Wi-Fi: {ssid}")
+        print()
+        print("========================================")
+        print("STARTING WIFI CONNECTION")
+        print("SSID:", repr(ssid))
+        print("PASSWORD LENGTH:", len(password))
+        print("========================================")
 
         wifi_status = "CONNECTING..."
         wifi_error = ""
         connection_result = None
 
-        # Use the exact nmcli command that works manually.
-        if password:
-            command = [
+        # ---------------------------------------------------------
+        # 1. Find the Wi-Fi device
+        # ---------------------------------------------------------
+
+        device_result = subprocess.run(
+            [
                 "nmcli",
-                "device",
-                "wifi",
-                "connect",
-                ssid,
-                "password",
-                password
-            ]
-        else:
-            command = [
+                "-t",
+                "-f",
+                "DEVICE,TYPE",
+                "device"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        wifi_device = None
+
+        for line in device_result.stdout.splitlines():
+            parts = line.split(":")
+
+            if len(parts) >= 2:
+                device_name = parts[0]
+                device_type = parts[1]
+
+                if device_type == "wifi":
+                    wifi_device = device_name
+                    break
+
+        if not wifi_device:
+            print("ERROR: No Wi-Fi device found.")
+            print("NMCLI DEVICE OUTPUT:")
+            print(device_result.stdout)
+
+            wifi_error = "NO WIFI DEVICE FOUND"
+            connection_result = False
+            return
+
+        print("Wi-Fi device:", wifi_device)
+
+        # ---------------------------------------------------------
+        # 2. Delete any old connection profiles for this SSID
+        # ---------------------------------------------------------
+
+        print("Removing old profiles for this SSID...")
+
+        connection_result_old = subprocess.run(
+            [
                 "nmcli",
-                "device",
+                "-t",
+                "-f",
+                "NAME,UUID,TYPE",
+                "connection",
+                "show"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        for line in connection_result_old.stdout.splitlines():
+
+            if not line.strip():
+                continue
+
+            parts = line.split(":")
+
+            if len(parts) < 3:
+                continue
+
+            profile_name = parts[0]
+            profile_uuid = parts[1]
+            profile_type = parts[2]
+
+            if (
+                profile_type == "802-11-wireless"
+                and profile_name == ssid
+            ):
+                print("Deleting old profile:", profile_name)
+                print("UUID:", profile_uuid)
+
+                delete_result = subprocess.run(
+                    [
+                        "nmcli",
+                        "connection",
+                        "delete",
+                        "uuid",
+                        profile_uuid
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+
+                print(
+                    "DELETE RETURN CODE:",
+                    delete_result.returncode
+                )
+
+                print(
+                    "DELETE STDERR:",
+                    delete_result.stderr.strip()
+                )
+
+        # ---------------------------------------------------------
+        # 3. Create a completely fresh connection
+        # ---------------------------------------------------------
+
+        wifi_status = "CREATING WIFI PROFILE..."
+
+        # Use a unique profile name so NetworkManager cannot
+        # accidentally select an old profile.
+        profile_name = "FlightRadar-WiFi"
+
+        # Remove an old FlightRadar profile if one exists.
+        old_profile = subprocess.run(
+            [
+                "nmcli",
+                "connection",
+                "show",
+                profile_name
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        if old_profile.returncode == 0:
+            print("Deleting old FlightRadar Wi-Fi profile.")
+
+            subprocess.run(
+                [
+                    "nmcli",
+                    "connection",
+                    "delete",
+                    profile_name
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+
+        print("Creating new Wi-Fi profile...")
+
+        add_result = subprocess.run(
+            [
+                "nmcli",
+                "connection",
+                "add",
+                "type",
                 "wifi",
-                "connect",
+                "ifname",
+                wifi_device,
+                "con-name",
+                profile_name,
+                "ssid",
                 ssid
-            ]
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
 
-        print("Running nmcli connection command...")
+        print("ADD RETURN CODE:", add_result.returncode)
+        print("ADD STDOUT:", add_result.stdout.strip())
+        print("ADD STDERR:", add_result.stderr.strip())
 
-        result = subprocess.run(
-            command,
+        if add_result.returncode != 0:
+            wifi_error = "UNABLE TO CREATE WIFI PROFILE"
+            connection_result = False
+            return
+
+        # ---------------------------------------------------------
+        # 4. Explicitly configure WPA-PSK
+        # ---------------------------------------------------------
+
+        print("Configuring WPA-PSK security...")
+
+        modify_result = subprocess.run(
+            [
+                "nmcli",
+                "connection",
+                "modify",
+                profile_name,
+                "802-11-wireless-security.key-mgmt",
+                "wpa-psk",
+                "802-11-wireless-security.psk",
+                password
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        print(
+            "MODIFY RETURN CODE:",
+            modify_result.returncode
+        )
+
+        print(
+            "MODIFY STDOUT:",
+            modify_result.stdout.strip()
+        )
+
+        print(
+            "MODIFY STDERR:",
+            modify_result.stderr.strip()
+        )
+
+        if modify_result.returncode != 0:
+            wifi_error = "UNABLE TO CONFIGURE WIFI"
+            connection_result = False
+            return
+
+        # ---------------------------------------------------------
+        # 5. Bring the new profile up
+        # ---------------------------------------------------------
+
+        wifi_status = "CONNECTING..."
+
+        print("Activating new Wi-Fi profile...")
+
+        up_result = subprocess.run(
+            [
+                "nmcli",
+                "connection",
+                "up",
+                profile_name
+            ],
             capture_output=True,
             text=True,
             timeout=35
         )
 
-        print("NMCLI RETURN CODE:", result.returncode)
-        print("NMCLI STDOUT:", result.stdout.strip())
-        print("NMCLI STDERR:", result.stderr.strip())
+        print("UP RETURN CODE:", up_result.returncode)
+        print("UP STDOUT:", up_result.stdout.strip())
+        print("UP STDERR:", up_result.stderr.strip())
 
-        if result.returncode != 0:
-            error_text = result.stderr.strip() or result.stdout.strip()
+        if up_result.returncode != 0:
+
+            error_text = (
+                up_result.stderr.strip()
+                or up_result.stdout.strip()
+            )
 
             if (
                 "Secrets were required" in error_text
@@ -485,36 +692,51 @@ def _connect_wifi_worker(ssid, password):
             elif (
                 "No suitable device found" in error_text
                 or "not available" in error_text.lower()
-                or "conditions" in error_text.lower()
             ):
                 wifi_error = "WIFI DEVICE NOT READY"
 
             else:
+                print("FULL NMCLI ERROR:", error_text)
                 wifi_error = "UNABLE TO CONNECT"
 
             connection_result = False
             return
 
-        # nmcli has successfully created/activated the connection.
-        # Now verify that Wi-Fi and internet actually work.
+        # ---------------------------------------------------------
+        # 6. Verify Wi-Fi connection
+        # ---------------------------------------------------------
+
         wifi_status = "CHECKING WIFI..."
+
+        print("Wi-Fi profile activated. Checking connection...")
 
         for _ in range(20):
 
             if is_wifi_connected():
 
+                print("Wi-Fi is connected.")
+
                 wifi_status = "CHECKING INTERNET..."
 
                 if is_internet_connected():
 
+                    print("Internet connection confirmed.")
+                    print("WIFI AND INTERNET CONNECTED.")
+                    print("========================================")
+                    print()
+
                     wifi_status = "CONNECTED"
                     connection_result = True
-
-                    print("WIFI AND INTERNET CONNECTED.")
 
                     return
 
             time.sleep(0.5)
+
+        # ---------------------------------------------------------
+        # 7. Wi-Fi worked but internet did not
+        # ---------------------------------------------------------
+
+        print("Wi-Fi connected but internet could not be confirmed.")
 
         wifi_error = "WIFI CONNECTED - NO INTERNET"
         connection_result = False
