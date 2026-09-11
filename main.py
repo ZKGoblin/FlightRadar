@@ -1,3 +1,6 @@
+import os
+os.environ["SDL_AUDIODRIVER"] = "dummy"
+
 import pygame
 import math
 import requests
@@ -49,7 +52,7 @@ RADAR_RANGE_KM = 50
 
 # OpenSky
 
-UPDATE_INTERVAL = 10
+UPDATE_INTERVAL = 15
 
 # How far back we look when determining whether an
 # aircraft is genuinely climbing or descending.
@@ -130,13 +133,13 @@ canvas = pygame.Surface((INTERNAL_WIDTH, INTERNAL_HEIGHT))
 # Change these values to tune the appearance on the 480x320 display.
 FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
-FONT_SMALL_SIZE = 18
-FONT_MEDIUM_SIZE = 20
-FONT_LARGE_SIZE = 25
+FONT_SMALL_SIZE = 22
+FONT_MEDIUM_SIZE = 25
+FONT_LARGE_SIZE = 30
 
-DETAILS_SMALL_SIZE = 20
-DETAILS_MEDIUM_SIZE = 25
-DETAILS_LARGE_SIZE = 30
+DETAILS_SMALL_SIZE = 25
+DETAILS_MEDIUM_SIZE = 30
+DETAILS_LARGE_SIZE = 35
 
 small_font = pygame.font.Font(FONT_PATH, FONT_SMALL_SIZE)
 font = pygame.font.Font(FONT_PATH, FONT_MEDIUM_SIZE)
@@ -163,7 +166,7 @@ RADAR_CENTER = (INTERNAL_WIDTH // 2, INTERNAL_HEIGHT // 2)
 
 RADAR_CENTER_NORMAL_X = INTERNAL_WIDTH // 2
 
-RADAR_CENTER_SELECTED_X = int(INTERNAL_WIDTH * 0.77)
+RADAR_CENTER_SELECTED_X = int(INTERNAL_WIDTH * 0.68)
 
 RADAR_CENTER_Y = int(INTERNAL_HEIGHT * 0.50)
 
@@ -364,6 +367,21 @@ def fetch_aircraft():
         params = {"lamin": lamin, "lamax": lamax, "lomin": lomin, "lomax": lomax}
 
         response = requests.get(url, params=params, timeout=8)
+
+	if response.status_code == 429:
+		retry_after = response.headers.get(
+			"X-Rate-Limit-Retry-After-Seconds",
+			"60"
+		)
+
+		print(
+			f"OpenSky rate limited(429). "
+			f"Retry after {retry_after} seconds."
+		)
+
+		api_status = "RATE_LIMITED"
+
+		return
 
         response.raise_for_status()
 
@@ -595,12 +613,15 @@ def fetch_aircraft():
 
         api_status = "LIVE"
 
-    except Exception as error:
+    except requests.exceptions.RequestException as error:
 
-        print("OpenSky error:", error)
+        print("OpenSky request error:", error)
 
         api_status = "ERROR"
 
+    except Exception as error:
+	print("Opensky error", error)
+	api_status = "ERROR"
 
 def reposition_aircraft():
 
@@ -1606,8 +1627,8 @@ def draw_custom_location_menu():
             canvas.blit(key_text, key_text_rect)
 
     # Bottom controls
-    action_y = menu_y + 230 * SCALE
-    action_height = 34 * SCALE
+    action_y = menu_y + 240 * SCALE
+    action_height = 30 * SCALE
 
     backspace_rect = pygame.Rect(keypad_x, action_y, 132 * SCALE, action_height)
     clear_rect = pygame.Rect(
@@ -1626,7 +1647,7 @@ def draw_custom_location_menu():
     canvas.blit(clear_text, clear_text.get_rect(center=clear_rect.center))
 
     verify_rect = pygame.Rect(
-        menu_x + 105 * SCALE, menu_y + 269 * SCALE, 258 * SCALE, 30 * SCALE
+        menu_x + 105 * SCALE, menu_y + 275 * SCALE, 258 * SCALE, 30 * SCALE
     )
     pygame.draw.rect(canvas, DIM_GREEN, verify_rect, border_radius=4 * SCALE)
     pygame.draw.rect(
@@ -1958,7 +1979,7 @@ def change_radar_location(location_name, latitude=None, longitude=None):
 # AIRCRAFT DETAILS PANEL
 # ============================================================
 
-DETAIL_PANEL_WIDTH = int(INTERNAL_WIDTH * 0.31)
+DETAIL_PANEL_WIDTH = int(INTERNAL_WIDTH * 0.35)
 
 DETAIL_PANEL_MARGIN = 4 * SCALE
 
@@ -2033,13 +2054,6 @@ def draw_aircraft_details_panel():
     # ICAO24 / SQUAWK
     # ========================================================
 
-    icao24 = plane.get("icao24")
-
-    if icao24:
-        icao24_text = "ICAO24 " + str(icao24).upper()
-    else:
-        icao24_text = "ICAO24 UNKNOWN"
-
     squawk = plane.get("squawk")
 
     if squawk is not None:
@@ -2050,7 +2064,7 @@ def draw_aircraft_details_panel():
     else:
         squawk_text = "UNKNOWN"
 
-    combined_text = icao24_text + "   SQUAWK " + squawk_text
+    combined_text = "SQUAWK " + squawk_text
 
     combined_surface = DETAILS_SMALL_FONT.render(combined_text, True, DIM_GREEN)
 
@@ -2058,10 +2072,7 @@ def draw_aircraft_details_panel():
     if combined_surface.get_width() <= panel_width - 28 * SCALE:
         canvas.blit(combined_surface, (panel_x + 14 * SCALE, panel_y + 38 * SCALE))
     else:
-        icao_surface = DETAILS_SMALL_FONT.render(icao24_text, True, DIM_GREEN)
         squawk_surface = DETAILS_SMALL_FONT.render("SQ " + squawk_text, True, DIM_GREEN)
-
-        canvas.blit(icao_surface, (panel_x + 14 * SCALE, panel_y + 38 * SCALE))
 
         canvas.blit(
             squawk_surface,
@@ -2195,7 +2206,6 @@ def draw_aircraft_details_panel():
     def add_row(label, value):
         content_items.append(("row", label, str(value)))
 
-    add_header("FLIGHT ROUTE")
     add_row("ROUTE", route_text)
     add_row("AIRLINE", airline_text)
     add_row("REGISTRATION", registration)
@@ -2215,12 +2225,10 @@ def draw_aircraft_details_panel():
         if next_flight:
             add_row("NEXT", rotation_text(next_flight))
 
-    add_header("AIRCRAFT")
-    add_row("TYPE", type_text)
+    add_row("AIRCRAFT TYPE", type_text)
     add_row("MANUFACTURER", manufacturer)
     add_row("COUNTRY", country)
 
-    add_header("LIVE DATA")
     add_row("ALTITUDE", altitude_text)
     add_row("SPEED", speed_text)
     add_row("HEADING", heading_text)

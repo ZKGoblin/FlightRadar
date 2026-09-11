@@ -155,6 +155,10 @@ lookup_lock = threading.Lock()
 cache_loaded = False
 cache_load_lock = threading.Lock()
 
+CACHE_SAVE_INTERVAL = 60
+last_cache_save = 0
+cache_save_lock = threading.Lock()
+cache_dirty = False
 
 # ============================================================
 # DEFAULT RECORD
@@ -350,11 +354,27 @@ def save_disk_cache():
     the in-memory cache continues working normally.
     """
 
+    global last_cache_save
+    global cache_dirty
+
+    now = time.time()
+
+    with cache_save_lock:
+        if (
+            now - last_cache_save
+            <
+            CACHE_SAVE_INTERVAL
+        ):
+            cache_dirty = True
+            return
+
+        last_cache_save = now
+        cache_dirty = False
+
     try:
         with details_lock:
             items = list(details_cache.items())
 
-            # Keep the newest records if the cache gets unusually large.
             if len(items) > MAX_CACHE_ENTRIES:
                 items.sort(
                     key=lambda item: item[1].get(
@@ -363,11 +383,10 @@ def save_disk_cache():
                     )
                     if isinstance(item[1], dict)
                     else 0,
-                    reverse=True,
+                    reverse=True
                 )
 
                 items = items[:MAX_CACHE_ENTRIES]
-
             payload = dict(items)
 
         temporary = CACHE_FILE.with_suffix(
@@ -382,7 +401,7 @@ def save_disk_cache():
                 payload,
                 file,
                 ensure_ascii=False,
-                separators=(",", ":"),
+                separators=(",",":"),
             )
 
         os.replace(
@@ -391,8 +410,9 @@ def save_disk_cache():
         )
 
     except Exception as error:
-        print("Aircraft details cache save error:", error)
-
+        print(
+            "cache error",
+        )
 
 def cache_cleanup():
     now = time.time()
