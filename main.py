@@ -368,20 +368,20 @@ def fetch_aircraft():
 
         response = requests.get(url, params=params, timeout=8)
 
-	if response.status_code == 429:
-		retry_after = response.headers.get(
-			"X-Rate-Limit-Retry-After-Seconds",
-			"60"
-		)
+        if response.status_code == 429:
+            retry_after = response.headers.get(
+                "X-Rate-Limit-Retry-After-Seconds",
+                "60"
+            )
 
-		print(
-			f"OpenSky rate limited(429). "
-			f"Retry after {retry_after} seconds."
-		)
+            print(
+                f"OpenSky rate limited(429). "
+                f"Retry after {retry_after} seconds."
+            )
 
-		api_status = "RATE_LIMITED"
+            api_status = "RATE_LIMITED"
 
-		return
+            return
 
         response.raise_for_status()
 
@@ -620,8 +620,8 @@ def fetch_aircraft():
         api_status = "ERROR"
 
     except Exception as error:
-	print("Opensky error", error)
-	api_status = "ERROR"
+        print("Opensky error", error)
+        api_status = "ERROR"
 
 def reposition_aircraft():
 
