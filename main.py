@@ -348,46 +348,28 @@ def fetch_aircraft():
 
     try:
 
-        # Bounding box
+      
 
-        lat_delta = (RADAR_RANGE_KM / 111) * 1.15
+        radius_nm = RADAR_RANGE_KM / 1.852
 
-        lon_delta = (RADAR_RANGE_KM / (111 * math.cos(math.radians(RADAR_LAT)))) * 1.15
+       
+        url = (
+            "https://opendata.adsb.fi/api/v3/"
+            f"lat/{RADAR_LAT}/"
+            f"lon/{RADAR_LON}/"
+            f"dist/{radius_nm:.1f}"
+        )
 
-        lamin = RADAR_LAT - lat_delta
-        lamax = RADAR_LAT + lat_delta
-
-        lomin = RADAR_LON - lon_delta
-        lomax = RADAR_LON + lon_delta
-
-        # API request
-
-        url = "https://opensky-network.org/api/states/all"
-
-        params = {"lamin": lamin, "lamax": lamax, "lomin": lomin, "lomax": lomax}
-
-        response = requests.get(url, params=params, timeout=8)
-
-        if response.status_code == 429:
-            retry_after = response.headers.get(
-                "X-Rate-Limit-Retry-After-Seconds",
-                "60"
-            )
-
-            print(
-                f"OpenSky rate limited(429). "
-                f"Retry after {retry_after} seconds."
-            )
-
-            api_status = "RATE_LIMITED"
-
-            return
+        response = requests.get(
+            url,
+            timeout=8
+        )
 
         response.raise_for_status()
 
         data = response.json()
 
-        states = data.get("states", [])
+        states = data.get("ac", [])
 
         # The time at which these states were received.
 
@@ -395,89 +377,160 @@ def fetch_aircraft():
 
         new_aircraft = {}
 
-        # Process states
+        # ========================================================
+        # PROCESS AIRCRAFT
+        # ========================================================
 
         for state in states:
 
-            if len(state) < 17:
+            # Need a valid aircraft record.
+
+            icao24 = state.get("hex")
+
+            if not icao24:
                 continue
 
-            icao24 = state[0]
+            icao24 = str(icao24).strip().lower()
 
-            callsign = state[1]
+            # ----------------------------------------------------
+            # POSITION
+            # ----------------------------------------------------
 
-            latitude = state[6]
+            latitude = state.get("lat")
 
-            longitude = state[5]
-
-            altitude = state[7]
-
-            on_ground = state[8]
-
-            velocity = state[9]
-
-            heading = state[10]
-
-            vertical_rate = state[11]
-
-            squawk = state[14]
-
-            # Need a position.
+            longitude = state.get("lon")
 
             if latitude is None or longitude is None:
                 continue
 
-            # Ignore aircraft on the ground.
+            
 
-            if on_ground:
+            altitude_raw = state.get("alt_baro")
+
+            if altitude_raw == "ground":
                 continue
 
-            # Distance
+            # ----------------------------------------------------
+            # DISTANCE
+            # ----------------------------------------------------
 
-            distance = haversine_distance(RADAR_LAT, RADAR_LON, latitude, longitude)
+            distance = haversine_distance(
+                RADAR_LAT,
+                RADAR_LON,
+                latitude,
+                longitude
+            )
+
+            # Keep the existing local distance check as a safety
+            # measure, even though the API already applies the
+            # requested radius.
 
             if distance > RADAR_RANGE_KM:
                 continue
 
-            # Bearing
+            # ----------------------------------------------------
+            # BEARING
+            # ----------------------------------------------------
 
-            bearing = calculate_bearing(RADAR_LAT, RADAR_LON, latitude, longitude)
+            bearing = calculate_bearing(
+                RADAR_LAT,
+                RADAR_LON,
+                latitude,
+                longitude
+            )
 
-            # Callsign
+            # ----------------------------------------------------
+            # CALLSIGN
+            # ----------------------------------------------------
+
+            callsign = state.get("flight")
 
             if callsign:
 
-                callsign = callsign.strip()
+                callsign = str(callsign).strip()
 
             else:
 
                 callsign = icao24.upper()
 
-            # Units
-
-            speed_knots = None
-
-            if velocity is not None:
-
-                speed_knots = velocity * 1.94384
+          
 
             altitude_ft = None
 
-            if altitude is not None:
+            if altitude_raw is not None:
 
-                altitude_ft = altitude * 3.28084
+                try:
+
+                    altitude_ft = float(altitude_raw)
+
+                except (ValueError, TypeError):
+
+                    altitude_ft = None
+
+           
+
+            speed_knots = None
+
+            velocity = state.get("gs")
+
+            if velocity is not None:
+
+                try:
+
+                    speed_knots = float(velocity)
+
+                except (ValueError, TypeError):
+
+                    speed_knots = None
+
+          
+
+            heading = state.get("track")
+
+            if heading is not None:
+
+                try:
+
+                    heading = float(heading)
+
+                except (ValueError, TypeError):
+
+                    heading = None
+
+        
 
             vertical_rate_fpm = None
 
+            vertical_rate = state.get("baro_rate")
+
             if vertical_rate is not None:
 
-                vertical_rate_fpm = vertical_rate * 196.8504
+                try:
 
-            # Target radar position
+                    vertical_rate_fpm = float(vertical_rate)
 
-            target_x, target_y = radar_position(distance, bearing)
+                except (ValueError, TypeError):
 
-            # Create aircraft record
+                    vertical_rate_fpm = None
+
+            # ----------------------------------------------------
+            # SQUAWK
+            # ----------------------------------------------------
+
+            squawk = state.get("squawk")
+
+            # ----------------------------------------------------
+            # TARGET RADAR POSITION
+            # ----------------------------------------------------
+
+            target_x, target_y = radar_position(
+                distance,
+                bearing
+            )
+
+            # ====================================================
+            # CREATE AIRCRAFT RECORD
+            # ====================================================
 
             new_aircraft[icao24] = {
                 "icao24": icao24,
@@ -494,41 +547,69 @@ def fetch_aircraft():
                 "bearing": bearing,
                 "target_x": target_x,
                 "target_y": target_y,
-                "target_heading": (heading if heading is not None else bearing),
+                "target_heading": (
+                    heading if heading is not None else bearing
+                ),
                 "update_time": update_time,
-                # Stores altitude readings for the
-                # rolling climb/descent calculation.
+
+                # Stores altitude readings for the rolling
+                # climb/descent calculation.
                 "altitude_history": [],
             }
 
-        for plane in new_aircraft.values():
-            fetch_details_async(plane["icao24"], plane["callsign"], force=False)
+        # ========================================================
+        # FETCH AIRCRAFT DETAILS
+        # ========================================================
 
-        # Update aircraft positions
+        for plane in new_aircraft.values():
+
+            fetch_details_async(
+                plane["icao24"],
+                plane["callsign"],
+                force=False
+            )
+
+        # ========================================================
+        # UPDATE AIRCRAFT POSITIONS
+        # ========================================================
 
         with aircraft_lock:
 
             for icao24, new_plane in new_aircraft.items():
 
-                # Existing aircraft
+                # ------------------------------------------------
+                # EXISTING AIRCRAFT
+                # ------------------------------------------------
 
                 if icao24 in aircraft:
 
                     old_plane = aircraft[icao24]
 
-                    old_position_history = old_plane.get("position_history", [])
+                    old_position_history = old_plane.get(
+                        "position_history",
+                        []
+                    )
 
-                    new_plane["position_history"] = list(old_position_history)
+                    new_plane["position_history"] = list(
+                        old_position_history
+                    )
 
-                    # Keep the aircraft where it visually is
-                    # when a new API update arrives.
+                    # Keep the aircraft where it visually is when
+                    # a new API update arrives.
 
-                    old_x = old_plane.get("display_x", new_plane["target_x"])
+                    old_x = old_plane.get(
+                        "display_x",
+                        new_plane["target_x"]
+                    )
 
-                    old_y = old_plane.get("display_y", new_plane["target_y"])
+                    old_y = old_plane.get(
+                        "display_y",
+                        new_plane["target_y"]
+                    )
 
                     old_heading = old_plane.get(
-                        "display_heading", new_plane["target_heading"]
+                        "display_heading",
+                        new_plane["target_heading"]
                     )
 
                     new_plane["start_x"] = old_x
@@ -540,10 +621,13 @@ def fetch_aircraft():
                     # ALTITUDE HISTORY
                     # ------------------------------------------------
 
-                    old_history = old_plane.get("altitude_history", [])
+                    old_history = old_plane.get(
+                        "altitude_history",
+                        []
+                    )
 
-                    # Make a copy so the old aircraft record
-                    # isn't modified while we're processing it.
+                    # Make a copy so the old aircraft record isn't
+                    # modified while processing it.
 
                     altitude_history = list(old_history)
 
@@ -551,11 +635,19 @@ def fetch_aircraft():
 
                     if new_plane["altitude"] is not None:
 
-                        altitude_history.append((update_time, new_plane["altitude"]))
+                        altitude_history.append(
+                            (
+                                update_time,
+                                new_plane["altitude"]
+                            )
+                        )
 
-                    # Remove readings older than our trend period.
+                    # Remove readings older than the trend period.
 
-                    cutoff_time = update_time - ALTITUDE_TREND_SECONDS
+                    cutoff_time = (
+                        update_time -
+                        ALTITUDE_TREND_SECONDS
+                    )
 
                     altitude_history = [
                         reading
@@ -567,38 +659,45 @@ def fetch_aircraft():
 
                     new_plane["altitude_history"] = altitude_history
 
-                # New aircraft
-
+              
                 else:
 
                     new_plane["start_x"] = new_plane["target_x"]
 
                     new_plane["start_y"] = new_plane["target_y"]
 
-                    new_plane["start_heading"] = new_plane["target_heading"]
+                    new_plane["start_heading"] = (
+                        new_plane["target_heading"]
+                    )
 
                     # Start altitude history.
 
                     if new_plane["altitude"] is not None:
 
                         new_plane["altitude_history"] = [
-                            (update_time, new_plane["altitude"])
+                            (
+                                update_time,
+                                new_plane["altitude"]
+                            )
                         ]
 
                     else:
 
                         new_plane["altitude_history"] = []
 
+             
+
                 new_plane["display_x"] = new_plane["start_x"]
 
                 new_plane["display_y"] = new_plane["start_y"]
 
-                new_plane["display_heading"] = new_plane["start_heading"]
+                new_plane["display_heading"] = (
+                    new_plane["start_heading"]
+                )
 
                 aircraft[icao24] = new_plane
 
-            # Remove aircraft no longer seen
-
+        
             current_ids = set(new_aircraft.keys())
 
             old_ids = list(aircraft.keys())
@@ -609,18 +708,21 @@ def fetch_aircraft():
 
                     del aircraft[icao24]
 
+     
         last_api_update = update_time
 
         api_status = "LIVE"
 
     except requests.exceptions.RequestException as error:
 
-        print("OpenSky request error:", error)
+        print("ADSB.fi request error:", error)
 
         api_status = "ERROR"
 
     except Exception as error:
-        print("Opensky error", error)
+
+        print("ADSB.fi error:", error)
+
         api_status = "ERROR"
 
 def reposition_aircraft():
