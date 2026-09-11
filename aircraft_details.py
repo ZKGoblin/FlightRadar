@@ -361,9 +361,9 @@ def save_disk_cache():
 
     with cache_save_lock:
         if (
-            not force
-            and
-            now - last_cache_save < CACHE_SAVE_INTERVAL
+            now - last_cache_save
+            <
+            CACHE_SAVE_INTERVAL
         ):
             cache_dirty = True
             return

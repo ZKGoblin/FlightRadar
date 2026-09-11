@@ -52,7 +52,7 @@ RADAR_RANGE_KM = 50
 
 # OpenSky
 
-UPDATE_INTERVAL = 10
+UPDATE_INTERVAL = 15
 
 # How far back we look when determining whether an
 # aircraft is genuinely climbing or descending.
@@ -368,6 +368,21 @@ def fetch_aircraft():
 
         response = requests.get(url, params=params, timeout=8)
 
+	if response.status_code == 429:
+		retry_after = response.headers.get(
+			"X-Rate-Limit-Retry-After-Seconds",
+			"60"
+		)
+
+		print(
+			f"OpenSky rate limited(429). "
+			f"Retry after {retry_after} seconds."
+		)
+
+		api_status = "RATE_LIMITED"
+
+		return
+
         response.raise_for_status()
 
         data = response.json()
@@ -598,12 +613,15 @@ def fetch_aircraft():
 
         api_status = "LIVE"
 
-    except Exception as error:
+    except requests.exceptions.RequestException as error:
 
-        print("OpenSky error:", error)
+        print("OpenSky request error:", error)
 
         api_status = "ERROR"
 
+    except Exception as error:
+	print("Opensky error", error)
+	api_status = "ERROR"
 
 def reposition_aircraft():
 
