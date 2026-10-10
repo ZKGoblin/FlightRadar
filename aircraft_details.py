@@ -1,11 +1,4 @@
 """
-aircraft_details.py
-
-Aircraft metadata + current-flight enrichment for the Flight Radar project.
-
-This module is deliberately designed to work with the supplied main.py
-WITHOUT requiring changes to its imports or function calls.
-
 Public API used by main.py:
     fetch_details_async(icao24, callsign=None, force=False)
     get_cached_details(icao24)
@@ -23,48 +16,6 @@ Data strategy
    - Prevents repeated requests.
    - Static aircraft data is retained for days.
    - Route/live data expires independently.
-
-Important:
-- A 404 means "this provider does not know the aircraft/route"; it is
-  NOT treated as a program error.
-- Network failures never erase information already cached.
-- Requests are serialised per aircraft so a radar containing many
-  aircraft does not create a thread storm.
-- No large ADS-B Exchange database is downloaded. This avoids the
-  large-file/404/cache problems that can occur with that approach.
-
-The module returns the keys expected by the supplied main.py, including:
-    registration
-    aircraft_type
-    aircraft_icao_type
-    manufacturer
-    airline
-    airline_icao
-    airline_iata
-    operator
-    owner
-    country
-    origin
-    origin_icao
-    origin_name
-    destination
-    destination_icao
-    destination_name
-    route
-    callsign
-    speed
-    latitude
-    longitude
-    previous_flight
-    next_flight
-    outbound
-    inbound
-    last_updated
-    static_updated
-    route_updated
-    loading
-    source
-    reliability
 """
 
 from __future__ import annotations
@@ -79,25 +30,24 @@ from urllib.parse import quote
 import requests
 
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
+# configuration
+
 
 MODULE_DIR = Path(__file__).resolve().parent
 
-# Keep the cache beside main.py / aircraft_details.py.
+# keep the cache beside main.py / aircraft_details.py.
 CACHE_FILE = MODULE_DIR / "aircraft_details_cache.json"
 
-# Static aircraft identity changes very rarely.
+# static aircraft identity changes very rarely.
 STATIC_CACHE_SECONDS = 7 * 24 * 60 * 60
 
-# Flight routes can change from one flight to another.
+# flight routes can change from one flight to another.
 ROUTE_CACHE_SECONDS = 15 * 60
 
-# Live ADS-B enrichment is intentionally short-lived.
+# live ads-b enrichment is intentionally short-lived.
 LIVE_CACHE_SECONDS = 30
 
-# A failed provider is temporarily suppressed so one bad endpoint
+# a failed provider is temporarily suppressed so one bad endpoint
 # cannot be hammered repeatedly.
 NEGATIVE_CACHE_SECONDS = 60
 
@@ -105,13 +55,12 @@ HTTP_TIMEOUT = 5
 HTTP_RETRIES = 1
 RETRY_DELAY = 0.6
 
-# Do not allow the local cache to grow forever.
+# do not allow the local cache to grow forever.
 MAX_CACHE_ENTRIES = 2500
 
 
-# ============================================================
-# PROVIDERS
-# ============================================================
+# providers
+
 
 ADSBDB_AIRCRAFT_URL = "https://api.adsbdb.com/v0/aircraft/"
 ADSBDB_CALLSIGN_URL = "https://api.adsbdb.com/v0/callsign/"
@@ -122,9 +71,8 @@ HEXDB_ROUTE_URL = "https://hexdb.io/api/v1/route/icao/"
 ADSBLOL_ICAO_URL = "https://api.adsb.lol/v2/icao/"
 
 
-# ============================================================
-# HTTP SESSION
-# ============================================================
+# http session
+
 
 session = requests.Session()
 
@@ -137,9 +85,8 @@ session.headers.update(
 )
 
 
-# ============================================================
-# MEMORY STATE
-# ============================================================
+# memory state
+
 
 details_cache = {}
 live_cache = {}
@@ -160,13 +107,13 @@ last_cache_save = 0
 cache_save_lock = threading.Lock()
 cache_dirty = False
 
-# ============================================================
-# DEFAULT RECORD
-# ============================================================
+
+# default record
+
 
 def empty_details():
     return {
-        # Aircraft identity
+        # aircraft identity
         "registration": None,
         "aircraft_type": None,
         "aircraft_icao_type": None,
@@ -178,7 +125,7 @@ def empty_details():
         "owner": None,
         "country": None,
 
-        # Current flight
+        # current flight
         "callsign": None,
         "origin": None,
         "origin_icao": None,
@@ -191,7 +138,7 @@ def empty_details():
         "destination_name": None,
         "route": None,
 
-        # Optional live values
+        # optional live values
         "speed": None,
         "latitude": None,
         "longitude": None,
@@ -199,20 +146,20 @@ def empty_details():
         "heading": None,
         "vertical_rate": None,
 
-        # Rotation fields retained for compatibility with main.py.
-        # Free public sources generally cannot provide these reliably.
+        # rotation fields retained for compatibility with main.py.
+        # free public sources generally cannot provide these reliably.
         "previous_flight": None,
         "next_flight": None,
         "outbound": None,
         "inbound": None,
 
-        # Diagnostics
+        # diagnostics
         "source": None,
         "route_provider": None,
         "reliability": 0,
         "reliability_text": "NO DATA",
 
-        # Timestamps
+        # timestamps
         "last_updated": 0,
         "static_updated": 0,
         "route_updated": 0,
@@ -222,9 +169,8 @@ def empty_details():
     }
 
 
-# ============================================================
-# BASIC HELPERS
-# ============================================================
+# basic helpers
+
 
 def clean(value):
     if value is None:
@@ -300,9 +246,8 @@ def url_part(value):
     return quote(str(value), safe="")
 
 
-# ============================================================
-# CACHE FILE
-# ============================================================
+# cache file
+
 
 def load_disk_cache():
     global cache_loaded
@@ -440,9 +385,8 @@ def cache_cleanup():
             )
 
 
-# ============================================================
-# HTTP
-# ============================================================
+# http
+
 
 def http_get(
     url,
@@ -470,7 +414,7 @@ def http_get(
             if response.status_code == 404:
                 return response
 
-            # Rate limits and temporary server errors are retryable.
+            # rate limits and temporary server errors are retryable.
             if response.status_code in (
                 408,
                 425,
@@ -544,9 +488,8 @@ def get_json(
     return None
 
 
-# ============================================================
-# MERGING
-# ============================================================
+# merging
+
 
 def merge_details(base, incoming):
     """
@@ -589,9 +532,8 @@ def clear_route_fields(record):
     record["route_updated"] = 0
 
 
-# ============================================================
-# NEGATIVE CACHE
-# ============================================================
+# negative cache
+
 
 def negative_key(icao24, callsign=None):
     return (
@@ -661,9 +603,8 @@ def clear_failed(
         )
 
 
-# ============================================================
-# AIRPORT / ROUTE HELPERS
-# ============================================================
+# airport / route helpers
+
 
 def airport_code(airport):
     if not isinstance(airport, dict):
@@ -753,9 +694,8 @@ def parse_route_string(route):
     return None, None
 
 
-# ============================================================
-# ADSBDB
-# ============================================================
+# adsbdb
+
 
 def fetch_adsbdb(
     icao24,
@@ -818,9 +758,9 @@ def fetch_adsbdb(
 
     result = empty_details()
 
-    # --------------------------------------------------------
-    # AIRCRAFT
-    # --------------------------------------------------------
+
+    # aircraft
+
 
     aircraft = response.get(
         "aircraft"
@@ -870,9 +810,9 @@ def fetch_adsbdb(
             )
         )
 
-    # --------------------------------------------------------
-    # FLIGHT ROUTE
-    # --------------------------------------------------------
+
+    # flight route
+
 
     flight_route = response.get(
         "flightroute"
@@ -1000,9 +940,8 @@ def fetch_adsbdb(
     return result
 
 
-# ============================================================
-# HEXDB AIRCRAFT
-# ============================================================
+# hexdb aircraft
+
 
 def fetch_hexdb_aircraft(
     icao24
@@ -1092,9 +1031,8 @@ def fetch_hexdb_aircraft(
     return None
 
 
-# ============================================================
-# HEXDB ROUTE
-# ============================================================
+# hexdb route
+
 
 def fetch_hexdb_route(
     callsign
@@ -1164,9 +1102,8 @@ def fetch_hexdb_route(
     return result
 
 
-# ============================================================
-# ADSB.LOL LIVE
-# ============================================================
+# adsb.lol live
+
 
 def parse_adsblol_aircraft(item):
     if not isinstance(
@@ -1209,7 +1146,7 @@ def parse_adsblol_aircraft(item):
         item.get("lon")
     )
 
-    # ADSB.lol / readsb uses knots for gs.
+    # adsb.lol / readsb uses knots for gs.
     result["speed"] = safe_float(
         first_valid(
             item.get("gs"),
@@ -1320,8 +1257,8 @@ def fetch_adsblol_live(
     ):
         return None
 
-    # The exact hex lookup should normally return one aircraft.
-    # If multiple records exist, choose the first one with a position.
+    # the exact hex lookup should normally return one aircraft.
+    # if multiple records exist, choose the first one with a position.
     selected = None
 
     for item in aircraft_list:
@@ -1360,9 +1297,8 @@ def fetch_adsblol_live(
     return result
 
 
-# ============================================================
-# RELIABILITY
-# ============================================================
+# reliability
+
 
 def calculate_reliability(
     result
@@ -1486,9 +1422,8 @@ def calculate_reliability(
     return score, text
 
 
-# ============================================================
-# ROUTE IDENTITY
-# ============================================================
+# route identity
+
 
 def route_belongs_to_callsign(
     result,
@@ -1513,9 +1448,8 @@ def route_belongs_to_callsign(
     return expected == actual
 
 
-# ============================================================
-# MAIN DETAIL FETCH
-# ============================================================
+# main detail fetch
+
 
 def fetch_details(
     icao24,
@@ -1561,9 +1495,9 @@ def fetch_details(
             cached
         )
 
-    # --------------------------------------------------------
-    # Callsign supplied by OpenSky always wins over stale cache.
-    # --------------------------------------------------------
+
+    # callsign supplied by opensky always wins over stale cache.
+
 
     if callsign:
         old_callsign = normalise_callsign(
@@ -1575,17 +1509,17 @@ def fetch_details(
             and
             old_callsign != callsign
         ):
-            # The same physical aircraft can perform several flights
-            # in a day. Never carry the old flight's route over.
+            # the same physical aircraft can perform several flights
+            # in a day. never carry the old flight's route over.
             clear_route_fields(
                 result
             )
 
         result["callsign"] = callsign
 
-    # --------------------------------------------------------
-    # Position supplied by main.py.
-    # --------------------------------------------------------
+
+    # position supplied by main.py.
+
 
     lat = valid_latitude(
         latitude
@@ -1601,9 +1535,9 @@ def fetch_details(
     if lon is not None:
         result["longitude"] = lon
 
-    # --------------------------------------------------------
-    # Static cache decision.
-    # --------------------------------------------------------
+
+    # static cache decision.
+
 
     static_updated = safe_float(
         result.get(
@@ -1620,12 +1554,12 @@ def fetch_details(
         STATIC_CACHE_SECONDS
     )
 
-    # --------------------------------------------------------
-    # ADSBDB
-    #
-    # Even when static data is cached, run ADSBDB if the route is
-    # stale. This is the main way to detect a new flight.
-    # --------------------------------------------------------
+
+    # adsbdb
+
+    # even when static data is cached, run adsbdb if the route is
+    # stale. this is the main way to detect a new flight.
+
 
     route_updated = safe_float(
         result.get(
@@ -1674,7 +1608,7 @@ def fetch_details(
 
         if adsbdb_result:
 
-            # If ADSBDB knows the current callsign, its route belongs
+            # if adsbdb knows the current callsign, its route belongs
             # to that flight and can be accepted.
             incoming_callsign = normalise_callsign(
                 adsbdb_result.get(
@@ -1689,7 +1623,7 @@ def fetch_details(
                 and
                 incoming_callsign != callsign
             ):
-                # Keep static aircraft data, but reject the route.
+                # keep static aircraft data, but reject the route.
                 for key in (
                     "origin",
                     "origin_icao",
@@ -1725,7 +1659,7 @@ def fetch_details(
                         "route_provider"
                     ] = "ADSBDB"
 
-            # Static information can be trusted for the long cache.
+            # static information can be trusted for the long cache.
             if any(
                 adsbdb_result.get(key)
                 for key in (
@@ -1755,9 +1689,9 @@ def fetch_details(
                 callsign
             )
 
-    # --------------------------------------------------------
-    # HEXDB STATIC FALLBACK
-    # --------------------------------------------------------
+
+    # hexdb static fallback
+
 
     static_updated = safe_float(
         result.get(
@@ -1807,9 +1741,9 @@ def fetch_details(
                 now
             )
 
-    # --------------------------------------------------------
-    # HEXDB ROUTE FALLBACK
-    # --------------------------------------------------------
+
+    # hexdb route fallback
+
 
     route_updated = safe_float(
         result.get(
@@ -1862,9 +1796,9 @@ def fetch_details(
             result["route_updated"] = now
             result["route_provider"] = "HEXDB"
 
-    # --------------------------------------------------------
-    # LIVE ADSB.LOL
-    # --------------------------------------------------------
+
+    # live adsb.lol
+
 
     live = fetch_adsblol_live(
         icao24,
@@ -1873,8 +1807,8 @@ def fetch_details(
 
     if live:
 
-        # Do not allow an ADSB.lol route/callsign from another flight
-        # to overwrite the route selected by OpenSky.
+        # do not allow an adsb.lol route/callsign from another flight
+        # to overwrite the route selected by opensky.
         live_callsign = normalise_callsign(
             live.get("callsign")
         )
@@ -1892,7 +1826,7 @@ def fetch_details(
             )
 
         else:
-            # Keep only instantaneous physical values.
+            # keep only instantaneous physical values.
             for key in (
                 "speed",
                 "latitude",
@@ -1908,16 +1842,16 @@ def fetch_details(
                 if value is not None:
                     result[key] = value
 
-    # --------------------------------------------------------
-    # Ensure OpenSky callsign remains authoritative.
-    # --------------------------------------------------------
+
+    # ensure opensky callsign remains authoritative.
+
 
     if callsign:
         result["callsign"] = callsign
 
-    # --------------------------------------------------------
-    # Ensure route is internally consistent.
-    # --------------------------------------------------------
+
+    # ensure route is internally consistent.
+
 
     if (
         not result.get("route")
@@ -1931,9 +1865,9 @@ def fetch_details(
             result["destination"]
         )
 
-    # --------------------------------------------------------
-    # Reliability
-    # --------------------------------------------------------
+
+    # reliability
+
 
     score, text = calculate_reliability(
         result
@@ -1942,14 +1876,14 @@ def fetch_details(
     result["reliability"] = score
     result["reliability_text"] = text
 
-    # --------------------------------------------------------
-    # Status
-    # --------------------------------------------------------
+
+    # status
+
 
     result["loading"] = False
     result["last_updated"] = now
 
-    # Preserve a static timestamp from an older successful lookup.
+    # preserve a static timestamp from an older successful lookup.
     if not result.get(
         "static_updated"
     ) and cached:
@@ -1970,9 +1904,8 @@ def fetch_details(
     return result
 
 
-# ============================================================
-# ASYNC FETCH
-# ============================================================
+# async fetch
+
 
 def fetch_details_async(
     icao24,
@@ -2041,9 +1974,8 @@ def fetch_details_async(
     thread.start()
 
 
-# ============================================================
-# CACHE ACCESS
-# ============================================================
+# cache access
+
 
 def get_cached_details(
     icao24
@@ -2074,12 +2006,11 @@ def get_cached_details(
     return empty_details()
 
 
-# ============================================================
-# STARTUP
-# ============================================================
+# startup
 
-# Load the small local cache when the module is imported.
-#
-# This is deliberately fast and does not make any network requests.
+
+# load the small local cache when the module is imported.
+
+# this is deliberately fast and does not make any network requests.
 load_disk_cache()
 cache_cleanup()
