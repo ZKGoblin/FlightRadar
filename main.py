@@ -16,25 +16,25 @@ if not ensure_wifi():
     raise SystemExit
 
 
-# Wi-Fi / internet monitoring.
-# If the internet disappears while the radar is running, the
-# program returns to the same touch-screen Wi-Fi setup.
+# wi-fi / internet monitoring.
+# if the internet disappears while the radar is running, the
+# program returns to the same touch-screen wi-fi setup.
 WIFI_CHECK_INTERVAL = 5
 last_wifi_check = time.time()
 
 
-# CONFIGURATION
+# configuration
 
 WINDOW_WIDTH = 480
 WINDOW_HEIGHT = 320
 
-# Render at higher resolution and downsample.
+# render at higher resolution and downsample.
 SCALE = 2
 
 INTERNAL_WIDTH = WINDOW_WIDTH * SCALE
 INTERNAL_HEIGHT = WINDOW_HEIGHT * SCALE
 
-# Radar location
+# radar location
 
 RADAR_LOCATIONS = {
     "EDINBURGH AIRPORT": {"lat": 55.947269, "lon": -3.360838},
@@ -50,19 +50,19 @@ RADAR_LON = RADAR_LOCATIONS[RADAR_NAME]["lon"]
 
 RADAR_RANGE_KM = 50
 
-# OpenSky
+# opensky
 
 UPDATE_INTERVAL = 15
 
-# How far back we look when determining whether an
+# how far back we look when determining whether an
 # aircraft is genuinely climbing or descending.
 ALTITUDE_TREND_SECONDS = 30
 
-# Minimum altitude change required to show an indicator.
+# minimum altitude change required to show an indicator.
 ALTITUDE_TREND_THRESHOLD = 150
 
 
-# COLOURS
+# colours
 
 BACKGROUND = (5, 10, 7)
 
@@ -77,9 +77,9 @@ AIRCRAFT_HIGHLIGHT = (255, 255, 255)
 
 PANEL_BACKGROUND = (8, 18, 12)
 
-# ============================================================
-# RADAR COLOUR SETTINGS
-# ============================================================
+
+# radar colour settings
+
 
 current_radar_colour = (45, 190, 70)
 
@@ -114,7 +114,7 @@ update_radar_colours()
 
 menu_open = False
 
-# PYGAME
+# pygame
 
 pygame.init()
 
@@ -127,10 +127,10 @@ clock = pygame.time.Clock()
 canvas = pygame.Surface((INTERNAL_WIDTH, INTERNAL_HEIGHT))
 
 
-# FONTS
+# fonts
 
-# All text continues to use the same DejaVu Sans font.
-# Change these values to tune the appearance on the 480x320 display.
+# all text continues to use the same dejavu sans font.
+# change these values to tune the appearance on the 480x320 display.
 FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 FONT_SMALL_SIZE = 22
@@ -154,11 +154,11 @@ DETAILS_MEDIUM_FONT = DETAIL_FONT_MEDIUM
 DETAILS_LARGE_FONT = DETAIL_FONT_LARGE
 
 
-# RADAR
+# radar
 
-# ============================================================
-# RADAR POSITION
-# ============================================================
+
+# radar position
+
 
 RADAR_RADIUS = 125 * SCALE
 
@@ -175,7 +175,7 @@ def update_radar_layout():
 
     global RADAR_CENTER
 
-    # Determine where the radar should be.
+    # determine where the radar should be.
 
     if selected_aircraft is not None:
 
@@ -185,17 +185,17 @@ def update_radar_layout():
 
         new_center = (RADAR_CENTER_NORMAL_X, RADAR_CENTER_Y)
 
-    # If the radar hasn't moved, do nothing.
+    # if the radar hasn't moved, do nothing.
 
     if new_center == RADAR_CENTER:
 
         return
 
-    # Move the radar immediately.
+    # move the radar immediately.
 
     RADAR_CENTER = new_center
 
-    # Snap all aircraft to their new positions.
+    # snap all aircraft to their new positions.
 
     with aircraft_lock:
 
@@ -208,35 +208,35 @@ def update_radar_layout():
 
                 continue
 
-            # Calculate the aircraft's position using
+            # calculate the aircraft's position using
             # the newly positioned radar centre.
 
             new_x, new_y = radar_position(distance, bearing)
 
-            # Update target position.
+            # update target position.
 
             plane["target_x"] = new_x
             plane["target_y"] = new_y
 
-            # Immediately move the aircraft there.
+            # immediately move the aircraft there.
 
             plane["display_x"] = new_x
             plane["display_y"] = new_y
 
-            # Make this the starting point for the
-            # next normal OpenSky animation.
+            # make this the starting point for the
+            # next normal opensky animation.
 
             plane["start_x"] = new_x
             plane["start_y"] = new_y
 
-            # Preserve the current heading.
+            # preserve the current heading.
 
             plane["start_heading"] = plane.get(
                 "display_heading", plane.get("target_heading", 0)
             )
 
 
-# AIRCRAFT DATA
+# aircraft data
 
 aircraft = {}
 
@@ -250,7 +250,7 @@ selected_aircraft = None
 
 selected_details = {}
 
-# Aircraft details panel scrolling state
+# aircraft details panel scrolling state
 details_scroll_offset = 0
 details_touch_start_y = None
 details_last_touch_y = None
@@ -265,7 +265,7 @@ selected_aircraft_details = None
 
 aircraft_details_loading = False
 
-# DISTANCE
+# distance
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
@@ -288,7 +288,7 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     return earth_radius * c
 
 
-# BEARING
+# bearing
 
 
 def calculate_bearing(lat1, lon1, lat2, lon2):
@@ -309,7 +309,7 @@ def calculate_bearing(lat1, lon1, lat2, lon2):
     return (bearing + 360) % 360
 
 
-# RADAR POSITION
+# radar position
 
 
 def radar_position(distance, bearing):
@@ -327,7 +327,7 @@ def radar_position(distance, bearing):
     return (x, y)
 
 
-# ANGLE INTERPOLATION
+# angle interpolation
 
 
 def interpolate_angle(start, end, amount):
@@ -337,7 +337,7 @@ def interpolate_angle(start, end, amount):
     return (start + difference * amount) % 360
 
 
-# OPEN SKY
+# open sky
 
 
 def fetch_aircraft():
@@ -348,11 +348,10 @@ def fetch_aircraft():
 
     try:
 
-      
 
         radius_nm = RADAR_RANGE_KM / 1.852
 
-       
+
         url = (
             "https://opendata.adsb.fi/api/v3/"
             f"lat/{RADAR_LAT}/"
@@ -371,19 +370,19 @@ def fetch_aircraft():
 
         states = data.get("ac", [])
 
-        # The time at which these states were received.
+        # the time at which these states were received.
 
         update_time = time.time()
 
         new_aircraft = {}
 
-        # ========================================================
-        # PROCESS AIRCRAFT
-        # ========================================================
+
+        # process aircraft
+
 
         for state in states:
 
-            # Need a valid aircraft record.
+            # need a valid aircraft record.
 
             icao24 = state.get("hex")
 
@@ -392,9 +391,9 @@ def fetch_aircraft():
 
             icao24 = str(icao24).strip().lower()
 
-            # ----------------------------------------------------
-            # POSITION
-            # ----------------------------------------------------
+
+            # position
+
 
             latitude = state.get("lat")
 
@@ -403,16 +402,15 @@ def fetch_aircraft():
             if latitude is None or longitude is None:
                 continue
 
-            
 
             altitude_raw = state.get("alt_baro")
 
             if altitude_raw == "ground":
                 continue
 
-            # ----------------------------------------------------
-            # DISTANCE
-            # ----------------------------------------------------
+
+            # distance
+
 
             distance = haversine_distance(
                 RADAR_LAT,
@@ -421,16 +419,16 @@ def fetch_aircraft():
                 longitude
             )
 
-            # Keep the existing local distance check as a safety
-            # measure, even though the API already applies the
+            # keep the existing local distance check as a safety
+            # measure, even though the api already applies the
             # requested radius.
 
             if distance > RADAR_RANGE_KM:
                 continue
 
-            # ----------------------------------------------------
-            # BEARING
-            # ----------------------------------------------------
+
+            # bearing
+
 
             bearing = calculate_bearing(
                 RADAR_LAT,
@@ -439,9 +437,9 @@ def fetch_aircraft():
                 longitude
             )
 
-            # ----------------------------------------------------
-            # CALLSIGN
-            # ----------------------------------------------------
+
+            # callsign
+
 
             callsign = state.get("flight")
 
@@ -453,7 +451,6 @@ def fetch_aircraft():
 
                 callsign = icao24.upper()
 
-          
 
             altitude_ft = None
 
@@ -467,7 +464,6 @@ def fetch_aircraft():
 
                     altitude_ft = None
 
-           
 
             speed_knots = None
 
@@ -483,7 +479,6 @@ def fetch_aircraft():
 
                     speed_knots = None
 
-          
 
             heading = state.get("track")
 
@@ -497,7 +492,6 @@ def fetch_aircraft():
 
                     heading = None
 
-        
 
             vertical_rate_fpm = None
 
@@ -513,24 +507,24 @@ def fetch_aircraft():
 
                     vertical_rate_fpm = None
 
-            # ----------------------------------------------------
-            # SQUAWK
-            # ----------------------------------------------------
+
+            # squawk
+
 
             squawk = state.get("squawk")
 
-            # ----------------------------------------------------
-            # TARGET RADAR POSITION
-            # ----------------------------------------------------
+
+            # target radar position
+
 
             target_x, target_y = radar_position(
                 distance,
                 bearing
             )
 
-            # ====================================================
-            # CREATE AIRCRAFT RECORD
-            # ====================================================
+
+            # create aircraft record
+
 
             new_aircraft[icao24] = {
                 "icao24": icao24,
@@ -552,14 +546,14 @@ def fetch_aircraft():
                 ),
                 "update_time": update_time,
 
-                # Stores altitude readings for the rolling
+                # stores altitude readings for the rolling
                 # climb/descent calculation.
                 "altitude_history": [],
             }
 
-        # ========================================================
-        # FETCH AIRCRAFT DETAILS
-        # ========================================================
+
+        # fetch aircraft details
+
 
         for plane in new_aircraft.values():
 
@@ -569,17 +563,17 @@ def fetch_aircraft():
                 force=False
             )
 
-        # ========================================================
-        # UPDATE AIRCRAFT POSITIONS
-        # ========================================================
+
+        # update aircraft positions
+
 
         with aircraft_lock:
 
             for icao24, new_plane in new_aircraft.items():
 
-                # ------------------------------------------------
-                # EXISTING AIRCRAFT
-                # ------------------------------------------------
+
+                # existing aircraft
+
 
                 if icao24 in aircraft:
 
@@ -594,8 +588,8 @@ def fetch_aircraft():
                         old_position_history
                     )
 
-                    # Keep the aircraft where it visually is when
-                    # a new API update arrives.
+                    # keep the aircraft where it visually is when
+                    # a new api update arrives.
 
                     old_x = old_plane.get(
                         "display_x",
@@ -617,21 +611,21 @@ def fetch_aircraft():
 
                     new_plane["start_heading"] = old_heading
 
-                    # ------------------------------------------------
-                    # ALTITUDE HISTORY
-                    # ------------------------------------------------
+
+                    # altitude history
+
 
                     old_history = old_plane.get(
                         "altitude_history",
                         []
                     )
 
-                    # Make a copy so the old aircraft record isn't
+                    # make a copy so the old aircraft record isn't
                     # modified while processing it.
 
                     altitude_history = list(old_history)
 
-                    # Add the newest altitude reading.
+                    # add the newest altitude reading.
 
                     if new_plane["altitude"] is not None:
 
@@ -642,7 +636,7 @@ def fetch_aircraft():
                             )
                         )
 
-                    # Remove readings older than the trend period.
+                    # remove readings older than the trend period.
 
                     cutoff_time = (
                         update_time -
@@ -655,11 +649,11 @@ def fetch_aircraft():
                         if reading[0] >= cutoff_time
                     ]
 
-                    # Keep the history.
+                    # keep the history.
 
                     new_plane["altitude_history"] = altitude_history
 
-              
+
                 else:
 
                     new_plane["start_x"] = new_plane["target_x"]
@@ -670,7 +664,7 @@ def fetch_aircraft():
                         new_plane["target_heading"]
                     )
 
-                    # Start altitude history.
+                    # start altitude history.
 
                     if new_plane["altitude"] is not None:
 
@@ -685,7 +679,6 @@ def fetch_aircraft():
 
                         new_plane["altitude_history"] = []
 
-             
 
                 new_plane["display_x"] = new_plane["start_x"]
 
@@ -697,7 +690,7 @@ def fetch_aircraft():
 
                 aircraft[icao24] = new_plane
 
-        
+
             current_ids = set(new_aircraft.keys())
 
             old_ids = list(aircraft.keys())
@@ -708,7 +701,7 @@ def fetch_aircraft():
 
                     del aircraft[icao24]
 
-     
+
         last_api_update = update_time
 
         api_status = "LIVE"
@@ -746,7 +739,7 @@ def reposition_aircraft():
             plane["target_y"] = target_y
 
 
-# API THREAD
+# api thread
 
 
 def api_loop():
@@ -763,7 +756,7 @@ api_thread = threading.Thread(target=api_loop, daemon=True)
 api_thread.start()
 
 
-# SMOOTH AIRCRAFT ANIMATION
+# smooth aircraft animation
 
 
 def update_animation():
@@ -784,28 +777,26 @@ def update_animation():
 
             amount = elapsed / UPDATE_INTERVAL
 
-            # Keep animation between 0 and 1.
+            # keep animation between 0 and 1.
 
             amount = max(0.0, min(1.0, amount))
 
             smooth_amount = amount * amount * (3 - 2 * amount)
 
-            # Position
+            # position
 
             plane["display_x"] = start_x + (target_x - start_x) * smooth_amount
 
             plane["display_y"] = start_y + (target_y - start_y) * smooth_amount
 
-            # Heading
+            # heading
 
             plane["display_heading"] = interpolate_angle(
                 plane["start_heading"], plane["target_heading"], smooth_amount
             )
 
 
-# ============================================================
-# SELECTED AIRCRAFT DETAIL UPDATER
-# ============================================================
+# selected aircraft detail updater
 
 
 def update_selected_details():
@@ -819,21 +810,21 @@ def update_selected_details():
 
     current_time = time.time()
 
-    # Find the currently selected aircraft.
+    # find the currently selected aircraft.
 
     with aircraft_lock:
 
         plane = aircraft.get(selected_aircraft)
 
-    # Aircraft disappeared from radar.
+    # aircraft disappeared from radar.
 
     if plane is None:
 
         return
 
-    # --------------------------------------------------------
-    # REFRESH EXTERNAL INFORMATION
-    # --------------------------------------------------------
+
+    # refresh external information
+
 
     if current_time - last_detail_refresh >= DETAILS_REFRESH_INTERVAL:
 
@@ -841,25 +832,25 @@ def update_selected_details():
 
         fetch_details_async(plane["icao24"], plane["callsign"], force=True)
 
-    # --------------------------------------------------------
-    # GET LATEST CACHED INFORMATION
-    # --------------------------------------------------------
+
+    # get latest cached information
+
 
     selected_details = get_cached_details(plane["icao24"])
 
 
-# RADAR
+# radar
 
 
 def draw_radar():
 
     cx, cy = RADAR_CENTER
 
-    # Outer circle
+    # outer circle
 
     pygame.draw.circle(canvas, RADAR_GREEN, RADAR_CENTER, RADAR_RADIUS, 2 * SCALE)
 
-    # Range rings
+    # range rings
 
     for fraction in [0.25, 0.50, 0.75]:
 
@@ -867,20 +858,20 @@ def draw_radar():
 
         pygame.draw.circle(canvas, DIM_GREEN, RADAR_CENTER, radius, SCALE)
 
-    # Horizontal line
+    # horizontal line
 
     pygame.draw.line(
         canvas, DIM_GREEN, (cx - RADAR_RADIUS, cy), (cx + RADAR_RADIUS, cy), SCALE
     )
 
-    # Vertical line
+    # vertical line
 
     pygame.draw.line(
         canvas, DIM_GREEN, (cx, cy - RADAR_RADIUS), (cx, cy + RADAR_RADIUS), SCALE
     )
 
 
-# COMPASS
+# compass
 
 
 def draw_compass():
@@ -904,7 +895,7 @@ def draw_compass():
         canvas.blit(text, rect)
 
 
-# AIRCRAFT ICON
+# aircraft icon
 
 
 def create_aircraft_icon():
@@ -915,7 +906,7 @@ def create_aircraft_icon():
 
     c = size // 2
 
-    # Main fuselage
+    # main fuselage
 
     fuselage = [
         (c, 2 * SCALE),
@@ -930,7 +921,7 @@ def create_aircraft_icon():
 
     pygame.draw.polygon(icon, AIRCRAFT_COLOUR, fuselage)
 
-    # Main wings
+    # main wings
 
     wings = [
         (c - 2 * SCALE, 15 * SCALE),
@@ -945,7 +936,7 @@ def create_aircraft_icon():
 
     pygame.draw.polygon(icon, AIRCRAFT_COLOUR, wings)
 
-    # Tailplane
+    # tailplane
 
     tail = [
         (c - 2 * SCALE, 29 * SCALE),
@@ -959,7 +950,7 @@ def create_aircraft_icon():
 
     pygame.draw.polygon(icon, AIRCRAFT_COLOUR, tail)
 
-    # Cockpit / nose highlight
+    # cockpit / nose highlight
 
     pygame.draw.line(
         icon, AIRCRAFT_HIGHLIGHT, (c, 5 * SCALE), (c, 30 * SCALE), 2 * SCALE
@@ -971,12 +962,10 @@ def create_aircraft_icon():
 AIRCRAFT_ICON = create_aircraft_icon()
 
 
-# ============================================================
-# AIRCRAFT DETAILS WINDOW
-# ============================================================
+# aircraft details window
 
 
-# DRAW AIRCRAFT
+# draw aircraft
 
 
 def draw_aircraft():
@@ -992,7 +981,7 @@ def draw_aircraft():
 
         heading = plane["display_heading"]
 
-        # Rotate aircraft
+        # rotate aircraft
 
         rotated = pygame.transform.rotozoom(AIRCRAFT_ICON, -heading, 1.0)
 
@@ -1000,15 +989,15 @@ def draw_aircraft():
 
         canvas.blit(rotated, rect)
 
-        # ------------------------------------------------
-        # LABEL BOX
-        # ------------------------------------------------
 
-        # Callsign
+        # label box
+
+
+        # callsign
 
         label = font.render(plane["callsign"], True, AIRCRAFT_HIGHLIGHT)
 
-        # Altitude
+        # altitude
 
         altitude = None
 
@@ -1016,7 +1005,7 @@ def draw_aircraft():
 
             altitude_text = f'{int(plane["altitude"]):,} ft'
 
-            # Determine climb/descent trend.
+            # determine climb/descent trend.
 
             indicator = ""
 
@@ -1032,7 +1021,7 @@ def draw_aircraft():
 
                 time_span = newest_time - oldest_time
 
-                # Only use the trend if we have
+                # only use the trend if we have
                 # enough time between readings.
 
                 if time_span >= 10:
@@ -1047,12 +1036,12 @@ def draw_aircraft():
 
             altitude = small_font.render(altitude_text + indicator, True, TEXT_GREEN)
 
-        # Padding inside the box
+        # padding inside the box
 
         padding_x = 6 * SCALE
         padding_y = 4 * SCALE
 
-        # Work out box size
+        # work out box size
 
         box_width = label.get_width()
 
@@ -1068,33 +1057,33 @@ def draw_aircraft():
 
         box_height += padding_y * 2
 
-        # Position remains exactly where the old
+        # position remains exactly where the old
         # callsign was positioned.
 
         box_x = int(x + 18 * SCALE)
         box_y = int(y - 14 * SCALE)
 
-        # Keep labels visible on the smaller 480x320 display.
+        # keep labels visible on the smaller 480x320 display.
         box_x = max(2 * SCALE, min(box_x, INTERNAL_WIDTH - box_width - 2 * SCALE))
         box_y = max(2 * SCALE, min(box_y, INTERNAL_HEIGHT - box_height - 2 * SCALE))
 
         box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
 
-        # Dark background
+        # dark background
 
         pygame.draw.rect(canvas, PANEL_BACKGROUND, box_rect, border_radius=3 * SCALE)
 
-        # Subtle green border
+        # subtle green border
 
         pygame.draw.rect(
             canvas, DIM_GREEN, box_rect, width=1 * SCALE, border_radius=3 * SCALE
         )
 
-        # Callsign
+        # callsign
 
         canvas.blit(label, (box_x + padding_x, box_y + padding_y))
 
-        # Altitude
+        # altitude
 
         if altitude is not None:
 
@@ -1104,7 +1093,7 @@ def draw_aircraft():
             )
 
 
-# RANGE LABELS
+# range labels
 
 
 def draw_range_labels():
@@ -1124,18 +1113,18 @@ def draw_range_labels():
         )
 
 
-# INFORMATION
+# information
 
 
 def draw_information():
 
-    # Location
+    # location
 
     location = font.render(RADAR_NAME, True, TEXT_GREEN)
 
     canvas.blit(location, (70 * SCALE, 18 * SCALE))
 
-    # Range
+    # range
 
     range_text = font.render(f"RANGE {RADAR_RANGE_KM} KM", True, TEXT_GREEN)
 
@@ -1143,7 +1132,7 @@ def draw_information():
 
     canvas.blit(range_text, range_rect)
 
-    # Aircraft count
+    # aircraft count
 
     with aircraft_lock:
 
@@ -1153,7 +1142,7 @@ def draw_information():
 
     canvas.blit(count_text, (20 * SCALE, INTERNAL_HEIGHT - 35 * SCALE))
 
-    # Status
+    # status
 
     status = small_font.render(api_status, True, TEXT_GREEN)
 
@@ -1164,7 +1153,7 @@ def draw_information():
     canvas.blit(status, status_rect)
 
 
-# RADAR CENTRE
+# radar centre
 
 
 def draw_radar_centre():
@@ -1172,7 +1161,7 @@ def draw_radar_centre():
     pygame.draw.circle(canvas, BRIGHT_GREEN, RADAR_CENTER, 5 * SCALE)
 
 
-# COLOR WHEEL
+# color wheel
 
 COLOR_WHEEL_RADIUS = 62 * SCALE
 COLOR_WHEEL_SIZE = COLOR_WHEEL_RADIUS * 2
@@ -1216,16 +1205,14 @@ def create_color_wheel():
 color_wheel_surface = create_color_wheel()
 
 
-# ============================================================
-# COORDINATE VALIDATION
-# ============================================================
+# coordinate validation
 
 
 def validate_coordinates(latitude_text, longitude_text):
 
     try:
 
-        # Must not be empty
+        # must not be empty
 
         if not latitude_text.strip():
             return False, "LATITUDE IS EMPTY"
@@ -1237,9 +1224,9 @@ def validate_coordinates(latitude_text, longitude_text):
 
         longitude = float(longitude_text)
 
-        # ----------------------------------------------------
-        # Check for valid numerical values
-        # ----------------------------------------------------
+
+        # check for valid numerical values
+
 
         if not math.isfinite(latitude):
             return False, "INVALID LATITUDE"
@@ -1247,25 +1234,25 @@ def validate_coordinates(latitude_text, longitude_text):
         if not math.isfinite(longitude):
             return False, "INVALID LONGITUDE"
 
-        # ----------------------------------------------------
-        # Latitude range
-        # ----------------------------------------------------
+
+        # latitude range
+
 
         if latitude < -90 or latitude > 90:
 
             return False, "LATITUDE MUST BE -90 TO 90"
 
-        # ----------------------------------------------------
-        # Longitude range
-        # ----------------------------------------------------
+
+        # longitude range
+
 
         if longitude < -180 or longitude > 180:
 
             return False, "LONGITUDE MUST BE -180 TO 180"
 
-        # ----------------------------------------------------
-        # Everything is valid
-        # ----------------------------------------------------
+
+        # everything is valid
+
 
         return True, ""
 
@@ -1274,9 +1261,7 @@ def validate_coordinates(latitude_text, longitude_text):
         return False, "INVALID COORDINATES"
 
 
-# ============================================================
-# LOCATION KEYPAD INPUT
-# ============================================================
+# location keypad input
 
 
 def keypad_input(character):
@@ -1293,23 +1278,23 @@ def keypad_input(character):
 
         value = custom_longitude
 
-    # --------------------------------------------------------
-    # NUMBER
-    # --------------------------------------------------------
+
+    # number
+
 
     if character.isdigit():
 
         value += character
 
-    # --------------------------------------------------------
-    # DECIMAL POINT
-    # --------------------------------------------------------
+
+    # decimal point
+
 
     elif character == ".":
 
         if "." not in value:
 
-            # Allow "." to become "0."
+            # allow "." to become "0."
 
             if value == "":
                 value = "0."
@@ -1317,13 +1302,13 @@ def keypad_input(character):
             else:
                 value += "."
 
-    # --------------------------------------------------------
-    # MINUS
-    # --------------------------------------------------------
+
+    # minus
+
 
     elif character == "-":
 
-        # Minus can only be the first character.
+        # minus can only be the first character.
 
         if value == "":
 
@@ -1331,35 +1316,35 @@ def keypad_input(character):
 
         elif value.startswith("-"):
 
-            # Remove minus if already present.
+            # remove minus if already present.
 
             value = value[1:]
 
         else:
 
-            # Put minus at the beginning.
+            # put minus at the beginning.
 
             value = "-" + value
 
-    # --------------------------------------------------------
-    # BACKSPACE
-    # --------------------------------------------------------
+
+    # backspace
+
 
     elif character == "BACKSPACE":
 
         value = value[:-1]
 
-    # --------------------------------------------------------
-    # CLEAR
-    # --------------------------------------------------------
+
+    # clear
+
 
     elif character == "CLEAR":
 
         value = ""
 
-    # --------------------------------------------------------
-    # SAVE VALUE
-    # --------------------------------------------------------
+
+    # save value
+
 
     if location_input_field == "latitude":
 
@@ -1369,17 +1354,16 @@ def keypad_input(character):
 
         custom_longitude = value
 
-    # Clear old error while typing.
+    # clear old error while typing.
 
     location_error = ""
 
 
-# ============================================================
-# MENU
-# ============================================================
+# menu
+
 
 MENU_BUTTON_SIZE = 42 * SCALE
-# Invisible touch area around the menu button. The visible button remains the same size.
+# invisible touch area around the menu button. the visible button remains the same size.
 MENU_BUTTON_HITBOX_SIZE = 58 * SCALE
 MENU_MARGIN = 12 * SCALE
 
@@ -1404,9 +1388,8 @@ location_error = ""
 
 location_verified = False
 
-# ============================================================
-# MENU BUTTON
-# ============================================================
+
+# menu button
 
 
 def draw_menu_button():
@@ -1419,7 +1402,7 @@ def draw_menu_button():
         canvas, DIM_GREEN, button_rect, width=1 * SCALE, border_radius=5 * SCALE
     )
 
-    # Three horizontal lines
+    # three horizontal lines
 
     line_left = MENU_X + 9 * SCALE
     line_right = MENU_X + 33 * SCALE
@@ -1435,9 +1418,7 @@ def draw_menu_button():
         )
 
 
-# ============================================================
-# MAIN MENU
-# ============================================================
+# main menu
 
 
 def draw_main_menu():
@@ -1450,23 +1431,23 @@ def draw_main_menu():
 
     menu_rect = pygame.Rect(menu_x, menu_y, MENU_WIDTH, menu_height)
 
-    # --------------------------------------------------------
-    # BACKGROUND
-    # --------------------------------------------------------
+
+    # background
+
 
     pygame.draw.rect(canvas, PANEL_BACKGROUND, menu_rect, border_radius=5 * SCALE)
 
-    # --------------------------------------------------------
-    # BORDER
-    # --------------------------------------------------------
+
+    # border
+
 
     pygame.draw.rect(
         canvas, DIM_GREEN, menu_rect, width=1 * SCALE, border_radius=5 * SCALE
     )
 
-    # --------------------------------------------------------
-    # MENU OPTIONS
-    # --------------------------------------------------------
+
+    # menu options
+
 
     options = [
         ("RADAR COLOUR", "colour"),
@@ -1485,13 +1466,13 @@ def draw_main_menu():
             menu_x + 8 * SCALE, option_y, MENU_WIDTH - 16 * SCALE, 40 * SCALE
         )
 
-        # Text
+        # text
 
         option_text = small_font.render(text, True, TEXT_GREEN)
 
         canvas.blit(option_text, (menu_x + 18 * SCALE, option_y + 12 * SCALE))
 
-        # Arrow
+        # arrow
 
         arrow = small_font.render(">", True, TEXT_GREEN)
 
@@ -1502,9 +1483,7 @@ def draw_main_menu():
         canvas.blit(arrow, arrow_rect)
 
 
-# ============================================================
-# RADAR LOCATION MENU
-# ============================================================
+# radar location menu
 
 
 def draw_location_menu():
@@ -1517,31 +1496,31 @@ def draw_location_menu():
 
     menu_rect = pygame.Rect(menu_x, menu_y, MENU_WIDTH, menu_height)
 
-    # --------------------------------------------------------
-    # BACKGROUND
-    # --------------------------------------------------------
+
+    # background
+
 
     pygame.draw.rect(canvas, PANEL_BACKGROUND, menu_rect, border_radius=5 * SCALE)
 
-    # --------------------------------------------------------
-    # BORDER
-    # --------------------------------------------------------
+
+    # border
+
 
     pygame.draw.rect(
         canvas, DIM_GREEN, menu_rect, width=1 * SCALE, border_radius=5 * SCALE
     )
 
-    # --------------------------------------------------------
-    # BACK
-    # --------------------------------------------------------
+
+    # back
+
 
     back_text = small_font.render("< BACK", True, TEXT_GREEN)
 
     canvas.blit(back_text, (menu_x + 12 * SCALE, menu_y + 10 * SCALE))
 
-    # --------------------------------------------------------
-    # TITLE
-    # --------------------------------------------------------
+
+    # title
+
 
     title = small_font.render("RADAR LOCATION", True, TEXT_GREEN)
 
@@ -1551,9 +1530,9 @@ def draw_location_menu():
 
     canvas.blit(title, title_rect)
 
-    # --------------------------------------------------------
-    # LOCATION OPTIONS
-    # --------------------------------------------------------
+
+    # location options
+
 
     options = [
         "EDINBURGH AIRPORT",
@@ -1574,13 +1553,13 @@ def draw_location_menu():
             menu_x + 8 * SCALE, option_y, MENU_WIDTH - 16 * SCALE, 32 * SCALE
         )
 
-        # Highlight current location
+        # highlight current location
 
         if current_radar_location == name:
 
             pygame.draw.rect(canvas, DIM_GREEN, option_rect, border_radius=3 * SCALE)
 
-        # Text
+        # text
 
         text = small_font.render(name, True, TEXT_GREEN)
 
@@ -1629,13 +1608,11 @@ def get_custom_keypad_rects():
     return key_rects
 
 
-# ============================================================
-# CUSTOM LOCATION ENTRY MENU
-# ============================================================
+# custom location entry menu
 
 
 def draw_custom_location_menu():
-    # Full-screen custom location entry. This is intentionally much larger
+    # full-screen custom location entry. this is intentionally much larger
     # than the normal menu so coordinate entry is reliable on the touchscreen.
     menu_x = 6 * SCALE
     menu_y = 6 * SCALE
@@ -1649,7 +1626,7 @@ def draw_custom_location_menu():
         canvas, DIM_GREEN, menu_rect, width=1 * SCALE, border_radius=6 * SCALE
     )
 
-    # Header
+    # header
     back_rect = pygame.Rect(menu_x + 6 * SCALE, menu_y + 5 * SCALE, 70 * SCALE, 30 * SCALE)
     back_text = small_font.render("< BACK", True, TEXT_GREEN)
     canvas.blit(back_text, (back_rect.x + 5 * SCALE, back_rect.y + 5 * SCALE))
@@ -1660,7 +1637,7 @@ def draw_custom_location_menu():
     )
     canvas.blit(title, title_rect)
 
-    # Coordinate fields
+    # coordinate fields
     field_width = 215 * SCALE
     field_height = 40 * SCALE
     fields_y = menu_y + 42 * SCALE
@@ -1689,7 +1666,7 @@ def draw_custom_location_menu():
         longitude_rect, "LONGITUDE", custom_longitude, location_input_field == "longitude"
     )
 
-    # Error line
+    # error line
     if location_error:
         error_surface = small_font.render(location_error, True, (255, 100, 100))
         error_rect = error_surface.get_rect(
@@ -1697,7 +1674,7 @@ def draw_custom_location_menu():
         )
         canvas.blit(error_surface, error_rect)
 
-    # Numeric keypad
+    # numeric keypad
     keys = [
         ["7", "8", "9"],
         ["4", "5", "6"],
@@ -1728,7 +1705,7 @@ def draw_custom_location_menu():
             key_text_rect = key_text.get_rect(center=key_rect.center)
             canvas.blit(key_text, key_text_rect)
 
-    # Bottom controls
+    # bottom controls
     action_y = menu_y + 240 * SCALE
     action_height = 30 * SCALE
 
@@ -1775,17 +1752,17 @@ def draw_colour_menu():
         canvas, DIM_GREEN, menu_rect, width=1 * SCALE, border_radius=5 * SCALE
     )
 
-    # --------------------------------------------------------
-    # BACK BUTTON
-    # --------------------------------------------------------
+
+    # back button
+
 
     back_text = small_font.render("< BACK", True, TEXT_GREEN)
 
     canvas.blit(back_text, (menu_x + 12 * SCALE, menu_y + 10 * SCALE))
 
-    # --------------------------------------------------------
-    # TITLE
-    # --------------------------------------------------------
+
+    # title
+
 
     title = small_font.render("RADAR COLOUR", True, TEXT_GREEN)
 
@@ -1836,9 +1813,7 @@ def draw_colour_menu():
     canvas.blit(color_text, color_rect)
 
 
-# ============================================================
-# RADIUS MENU
-# ============================================================
+# radius menu
 
 
 def draw_radius_menu():
@@ -1857,17 +1832,17 @@ def draw_radius_menu():
         canvas, DIM_GREEN, menu_rect, width=1 * SCALE, border_radius=5 * SCALE
     )
 
-    # --------------------------------------------------------
-    # BACK BUTTON
-    # --------------------------------------------------------
+
+    # back button
+
 
     back_text = small_font.render("< BACK", True, TEXT_GREEN)
 
     canvas.blit(back_text, (menu_x + 12 * SCALE, menu_y + 10 * SCALE))
 
-    # --------------------------------------------------------
-    # TITLE
-    # --------------------------------------------------------
+
+    # title
+
 
     title = small_font.render("RADAR RADIUS", True, TEXT_GREEN)
 
@@ -1877,9 +1852,9 @@ def draw_radius_menu():
 
     canvas.blit(title, title_rect)
 
-    # --------------------------------------------------------
-    # OPTIONS
-    # --------------------------------------------------------
+
+    # options
+
 
     options = [30, 50, 100]
 
@@ -1895,7 +1870,7 @@ def draw_radius_menu():
             menu_x + 8 * SCALE, option_y, MENU_WIDTH - 16 * SCALE, 32 * SCALE
         )
 
-        # Highlight current selection
+        # highlight current selection
 
         if RADAR_RANGE_KM == radius:
 
@@ -1906,9 +1881,7 @@ def draw_radius_menu():
         canvas.blit(text, (menu_x + 18 * SCALE, option_y + 8 * SCALE))
 
 
-# ============================================================
-# DRAW MENU
-# ============================================================
+# draw menu
 
 
 def draw_menu():
@@ -1932,9 +1905,7 @@ def draw_menu():
         draw_custom_location_menu()
 
 
-# ============================================================
-# AIRCRAFT CLICK DETECTION
-# ============================================================
+# aircraft click detection
 
 
 def handle_aircraft_click(mouse_pos):
@@ -1945,7 +1916,7 @@ def handle_aircraft_click(mouse_pos):
 
     mouse_x, mouse_y = mouse_pos
 
-    # Don't select aircraft while a menu is open.
+    # don't select aircraft while a menu is open.
 
     if menu_open:
 
@@ -1955,7 +1926,7 @@ def handle_aircraft_click(mouse_pos):
 
         planes = list(aircraft.values())
 
-    # Search backwards so aircraft drawn later
+    # search backwards so aircraft drawn later
     # get priority when they overlap.
 
     for plane in reversed(planes):
@@ -1965,7 +1936,7 @@ def handle_aircraft_click(mouse_pos):
 
         distance = math.sqrt((mouse_x - x) ** 2 + (mouse_y - y) ** 2)
 
-        # Aircraft selection radius.
+        # aircraft selection radius.
 
         if distance <= 28 * SCALE:
 
@@ -1975,7 +1946,7 @@ def handle_aircraft_click(mouse_pos):
 
             last_detail_refresh = 0
 
-            # Immediately request details.
+            # immediately request details.
 
             fetch_details_async(plane["icao24"], plane["callsign"], force=True)
 
@@ -2014,9 +1985,9 @@ def change_radar_location(location_name, latitude=None, longitude=None):
     global api_status
     global last_api_update
 
-    # ========================================================
-    # PREDEFINED LOCATION
-    # ========================================================
+
+    # predefined location
+
 
     if location_name in RADAR_LOCATIONS:
 
@@ -2025,9 +1996,9 @@ def change_radar_location(location_name, latitude=None, longitude=None):
         new_latitude = location["lat"]
         new_longitude = location["lon"]
 
-    # ========================================================
-    # CUSTOM LOCATION
-    # ========================================================
+
+    # custom location
+
 
     elif (
         location_name == "CUSTOM LOCATION"
@@ -2042,9 +2013,9 @@ def change_radar_location(location_name, latitude=None, longitude=None):
 
         return False
 
-    # ========================================================
-    # UPDATE RADAR
-    # ========================================================
+
+    # update radar
+
 
     RADAR_NAME = location_name
 
@@ -2054,9 +2025,9 @@ def change_radar_location(location_name, latitude=None, longitude=None):
 
     current_radar_location = location_name
 
-    # ========================================================
-    # CLEAR OLD AIRCRAFT
-    # ========================================================
+
+    # clear old aircraft
+
 
     with aircraft_lock:
 
@@ -2077,9 +2048,8 @@ def change_radar_location(location_name, latitude=None, longitude=None):
     return True
 
 
-# ============================================================
-# AIRCRAFT DETAILS PANEL
-# ============================================================
+# aircraft details panel
+
 
 DETAIL_PANEL_WIDTH = int(INTERNAL_WIDTH * 0.35)
 
@@ -2099,9 +2069,9 @@ def draw_aircraft_details_panel():
     if plane is None:
         return
 
-    # ========================================================
-    # PANEL GEOMETRY
-    # ========================================================
+
+    # panel geometry
+
 
     panel_x = DETAIL_PANEL_MARGIN
     panel_y = 38 * SCALE
@@ -2110,9 +2080,9 @@ def draw_aircraft_details_panel():
 
     panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
 
-    # ========================================================
-    # PANEL BACKGROUND
-    # ========================================================
+
+    # panel background
+
 
     pygame.draw.rect(canvas, PANEL_BACKGROUND, panel_rect, border_radius=7 * SCALE)
 
@@ -2120,9 +2090,9 @@ def draw_aircraft_details_panel():
         canvas, DIM_GREEN, panel_rect, width=1 * SCALE, border_radius=7 * SCALE
     )
 
-    # ========================================================
-    # CLOSE BUTTON
-    # ========================================================
+
+    # close button
+
 
     close_rect = pygame.Rect(
         panel_x + panel_width - 38 * SCALE, panel_y + 10 * SCALE, 28 * SCALE, 28 * SCALE
@@ -2136,15 +2106,15 @@ def draw_aircraft_details_panel():
 
     canvas.blit(close_text, close_text_rect)
 
-    # ========================================================
-    # TITLE
-    # ========================================================
+
+    # title
+
 
     callsign = plane.get("callsign", "UNKNOWN") or "UNKNOWN"
 
     title = DETAILS_LARGE_FONT.render(str(callsign), True, TEXT_GREEN)
 
-    # Keep title clear of the close button.
+    # keep title clear of the close button.
     title_area_width = panel_width - 60 * SCALE
 
     if title.get_width() > title_area_width:
@@ -2152,9 +2122,9 @@ def draw_aircraft_details_panel():
 
     canvas.blit(title, (panel_x + 14 * SCALE, panel_y + 10 * SCALE))
 
-    # ========================================================
-    # ICAO24 / SQUAWK
-    # ========================================================
+
+    # icao24 / squawk
+
 
     squawk = plane.get("squawk")
 
@@ -2170,7 +2140,7 @@ def draw_aircraft_details_panel():
 
     combined_surface = DETAILS_SMALL_FONT.render(combined_text, True, DIM_GREEN)
 
-    # If the combined line is too long, draw the two pieces separately.
+    # if the combined line is too long, draw the two pieces separately.
     if combined_surface.get_width() <= panel_width - 28 * SCALE:
         canvas.blit(combined_surface, (panel_x + 14 * SCALE, panel_y + 38 * SCALE))
     else:
@@ -2184,18 +2154,18 @@ def draw_aircraft_details_panel():
             ),
         )
 
-    # ========================================================
-    # CONTENT VIEWPORT
-    # ========================================================
+
+    # content viewport
+
 
     content_x = panel_x + 14 * SCALE
     content_top = panel_y + 62 * SCALE
     content_bottom = panel_y + panel_height - 22 * SCALE
     content_height = max(1, content_bottom - content_top)
 
-    # ========================================================
-    # DETAILS
-    # ========================================================
+
+    # details
+
 
     details = selected_details or {}
 
@@ -2269,9 +2239,9 @@ def draw_aircraft_details_panel():
     else:
         route_text = "UNKNOWN"
 
-    # ========================================================
-    # FLIGHT ROTATION
-    # ========================================================
+
+    # flight rotation
+
 
     outbound = details.get("outbound")
     inbound = details.get("inbound")
@@ -2296,9 +2266,9 @@ def draw_aircraft_details_panel():
 
         return "UNKNOWN"
 
-    # ========================================================
-    # BUILD CONTENT
-    # ========================================================
+
+    # build content
+
 
     content_items = []
 
@@ -2338,9 +2308,9 @@ def draw_aircraft_details_panel():
     add_row("POSITION", f"{latitude_text}, {longitude_text}")
     add_row("DISTANCE", distance_text)
 
-    # ========================================================
-    # TEXT WRAPPING
-    # ========================================================
+
+    # text wrapping
+
 
     max_text_width = panel_width - 28 * SCALE
 
@@ -2350,7 +2320,7 @@ def draw_aircraft_details_panel():
         if not text:
             return [""]
 
-        # First try the complete string.
+        # first try the complete string.
         if font_to_use.size(text)[0] <= max_width:
             return [text]
 
@@ -2368,7 +2338,7 @@ def draw_aircraft_details_panel():
             if current:
                 lines.append(current)
 
-            # Handle a single word that is wider than the panel.
+            # handle a single word that is wider than the panel.
             if font_to_use.size(word)[0] > max_width:
                 piece = ""
                 for character in word:
@@ -2388,9 +2358,9 @@ def draw_aircraft_details_panel():
 
         return lines or [""]
 
-    # ========================================================
-    # CALCULATE CONTENT HEIGHT
-    # ========================================================
+
+    # calculate content height
+
 
     header_height = 18 * SCALE
     label_height = 13 * SCALE
@@ -2415,17 +2385,17 @@ def draw_aircraft_details_panel():
             total_content_height += len(lines) * value_line_height
             total_content_height += row_gap
 
-    # Add a little breathing room at the bottom.
+    # add a little breathing room at the bottom.
     total_content_height += 8 * SCALE
 
     max_scroll = max(0, total_content_height - content_height)
 
-    # Clamp the current position.
+    # clamp the current position.
     details_scroll_offset = max(0, min(details_scroll_offset, max_scroll))
 
-    # ========================================================
-    # DRAW SCROLLABLE CONTENT
-    # ========================================================
+
+    # draw scrollable content
+
 
     old_clip = canvas.get_clip()
 
@@ -2466,9 +2436,9 @@ def draw_aircraft_details_panel():
 
     canvas.set_clip(old_clip)
 
-    # ========================================================
-    # SCROLLBAR
-    # ========================================================
+
+    # scrollbar
+
 
     if max_scroll > 0:
 
@@ -2499,9 +2469,9 @@ def draw_aircraft_details_panel():
             border_radius=2 * SCALE,
         )
 
-    # ========================================================
-    # UPDATE STATUS
-    # ========================================================
+
+    # update status
+
 
     update_time = details.get("last_updated", 0)
 
@@ -2513,7 +2483,7 @@ def draw_aircraft_details_panel():
 
     update_surface = small_font.render(update_text, True, DIM_GREEN)
 
-    # Clip status text to the panel so it can never extend outside.
+    # clip status text to the panel so it can never extend outside.
     status_clip = canvas.get_clip()
 
     canvas.set_clip(panel_rect)
@@ -2545,9 +2515,9 @@ def handle_details_click(mouse_pos):
 
     panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
 
-    # --------------------------------------------------------
-    # CLOSE BUTTON
-    # --------------------------------------------------------
+
+    # close button
+
 
     close_rect = pygame.Rect(
         panel_x + panel_width - 46 * SCALE, panel_y + 4 * SCALE, 40 * SCALE, 40 * SCALE
@@ -2562,12 +2532,12 @@ def handle_details_click(mouse_pos):
         details_drag_moved = False
         return True
 
-    # --------------------------------------------------------
-    # CLICK OUTSIDE DETAILS PANEL
-    # --------------------------------------------------------
-    # Clicking anywhere outside the panel closes it. This is
+
+    # click outside details panel
+
+    # clicking anywhere outside the panel closes it. this is
     # deliberately handled before the menu/aircraft handlers so
-    # the click cannot fall through to another UI element.
+    # the click cannot fall through to another ui element.
 
     if not panel_rect.collidepoint(mouse_x, mouse_y):
         deselect_aircraft()
@@ -2578,9 +2548,9 @@ def handle_details_click(mouse_pos):
         details_drag_moved = False
         return True
 
-    # --------------------------------------------------------
-    # START DETAILS DRAG
-    # --------------------------------------------------------
+
+    # start details drag
+
 
     details_touch_start_y = mouse_y
     details_last_touch_y = mouse_y
@@ -2590,9 +2560,7 @@ def handle_details_click(mouse_pos):
     return True
 
 
-# ============================================================
-# DETAILS PANEL DRAG / SCROLL HELPERS
-# ============================================================
+# details panel drag / scroll helpers
 
 
 def handle_details_motion(mouse_pos):
@@ -2609,7 +2577,7 @@ def handle_details_motion(mouse_pos):
 
     mouse_x, mouse_y = mouse_pos
 
-    # Only scroll while the pointer/finger is within the panel.
+    # only scroll while the pointer/finger is within the panel.
     panel_x = DETAIL_PANEL_MARGIN
     panel_y = 38 * SCALE
     panel_width = DETAIL_PANEL_WIDTH
@@ -2647,9 +2615,7 @@ def handle_details_release():
     details_drag_moved = False
 
 
-# ============================================================
-# CUSTOM LOCATION CLICK HANDLER
-# ============================================================
+# custom location click handler
 
 
 def handle_custom_location_click(mouse_pos):
@@ -2666,14 +2632,14 @@ def handle_custom_location_click(mouse_pos):
     menu_y = 6 * SCALE
     menu_width = INTERNAL_WIDTH - 12 * SCALE
 
-    # Back
+    # back
     back_rect = pygame.Rect(menu_x + 2 * SCALE, menu_y + 2 * SCALE, 82 * SCALE, 36 * SCALE)
     if back_rect.collidepoint(mouse_x, mouse_y):
         menu_page = "location"
         location_error = ""
         return True
 
-    # Coordinate fields
+    # coordinate fields
     field_width = 215 * SCALE
     field_height = 40 * SCALE
     fields_y = menu_y + 42 * SCALE
@@ -2693,7 +2659,7 @@ def handle_custom_location_click(mouse_pos):
         location_error = ""
         return True
 
-    # Numeric keypad
+    # numeric keypad
     keys = [
         ["7", "8", "9"],
         ["4", "5", "6"],
@@ -2716,7 +2682,7 @@ def handle_custom_location_click(mouse_pos):
                 keypad_input(key)
                 return True
 
-    # Bottom controls
+    # bottom controls
     action_y = menu_y + 230 * SCALE
     action_height = 34 * SCALE
 
@@ -2733,7 +2699,7 @@ def handle_custom_location_click(mouse_pos):
         keypad_input("CLEAR")
         return True
 
-    # Verify
+    # verify
     verify_rect = pygame.Rect(
         menu_x + 105 * SCALE, menu_y + 269 * SCALE, 258 * SCALE, 30 * SCALE
     )
@@ -2755,9 +2721,7 @@ def handle_custom_location_click(mouse_pos):
     return True
 
 
-# ============================================================
-# HANDLE MENU CLICKS
-# ============================================================
+# handle menu clicks
 
 
 def handle_menu_click(mouse_pos):
@@ -2774,9 +2738,9 @@ def handle_menu_click(mouse_pos):
 
     mouse_x, mouse_y = mouse_pos
 
-    # --------------------------------------------------------
-    # MENU BUTTON
-    # --------------------------------------------------------
+
+    # menu button
+
 
     button_rect = pygame.Rect(
         MENU_X - (MENU_BUTTON_HITBOX_SIZE - MENU_BUTTON_SIZE) // 2,
@@ -2795,29 +2759,29 @@ def handle_menu_click(mouse_pos):
 
         return True
 
-    # If menu isn't open, nothing else to do.
+    # if menu isn't open, nothing else to do.
 
     if not menu_open:
 
         return False
 
-    # --------------------------------------------------------
-    # MENU POSITION
-    # --------------------------------------------------------
+
+    # menu position
+
 
     menu_x = MENU_X
 
     menu_y = MENU_Y + MENU_BUTTON_SIZE + 6 * SCALE
 
-    # ========================================================
-    # MAIN MENU
-    # ========================================================
+
+    # main menu
+
 
     if menu_page == "main":
 
-        # --------------------------------------------
-        # RADAR COLOUR
-        # --------------------------------------------
+
+        # radar colour
+
 
         colour_rect = pygame.Rect(
             menu_x + 8 * SCALE, menu_y + 10 * SCALE, MENU_WIDTH - 16 * SCALE, 40 * SCALE
@@ -2829,9 +2793,9 @@ def handle_menu_click(mouse_pos):
 
             return True
 
-        # --------------------------------------------
-        # RADAR RADIUS
-        # --------------------------------------------
+
+        # radar radius
+
 
         radius_rect = pygame.Rect(
             menu_x + 8 * SCALE, menu_y + 55 * SCALE, MENU_WIDTH - 16 * SCALE, 40 * SCALE
@@ -2843,15 +2807,15 @@ def handle_menu_click(mouse_pos):
 
             return True
 
-    # ========================================================
-    # LOCATION MENU
-    # ========================================================
+
+    # location menu
+
 
     elif menu_page == "location":
 
-        # --------------------------------------------
-        # BACK
-        # --------------------------------------------
+
+        # back
+
 
         back_rect = pygame.Rect(menu_x, menu_y, 70 * SCALE, 35 * SCALE)
 
@@ -2861,9 +2825,9 @@ def handle_menu_click(mouse_pos):
 
             return True
 
-        # --------------------------------------------
-        # LOCATION OPTIONS
-        # --------------------------------------------
+
+        # location options
+
 
         options = [
             "EDINBURGH AIRPORT",
@@ -2906,15 +2870,15 @@ def handle_menu_click(mouse_pos):
 
                 return True
 
-    # ========================================================
-    # COLOUR MENU
-    # ========================================================
+
+    # colour menu
+
 
     elif menu_page == "colour":
 
-        # --------------------------------------------
-        # BACK
-        # --------------------------------------------
+
+        # back
+
 
         back_rect = pygame.Rect(menu_x, menu_y, 70 * SCALE, 35 * SCALE)
 
@@ -2924,9 +2888,9 @@ def handle_menu_click(mouse_pos):
 
             return True
 
-        # --------------------------------------------
-        # COLOUR OPTIONS
-        # --------------------------------------------
+
+        # colour options
+
 
         wheel_x = menu_x + MENU_WIDTH // 2 - COLOR_WHEEL_RADIUS
 
@@ -2966,15 +2930,15 @@ def handle_menu_click(mouse_pos):
 
         return True
 
-    # ========================================================
-    # RADIUS MENU
-    # ========================================================
+
+    # radius menu
+
 
     elif menu_page == "radius":
 
-        # --------------------------------------------
-        # BACK
-        # --------------------------------------------
+
+        # back
+
 
         back_rect = pygame.Rect(menu_x, menu_y, 70 * SCALE, 35 * SCALE)
 
@@ -2984,9 +2948,9 @@ def handle_menu_click(mouse_pos):
 
             return True
 
-        # --------------------------------------------
-        # RADIUS OPTIONS
-        # --------------------------------------------
+
+        # radius options
+
 
         options = [30, 50, 100]
 
@@ -3010,9 +2974,9 @@ def handle_menu_click(mouse_pos):
 
                 return True
 
-    # --------------------------------------------
-    # RADAR LOCATION
-    # --------------------------------------------
+
+    # radar location
+
 
     location_rect = pygame.Rect(
         menu_x + 8 * SCALE, menu_y + 100 * SCALE, MENU_WIDTH - 16 * SCALE, 40 * SCALE
@@ -3024,9 +2988,9 @@ def handle_menu_click(mouse_pos):
 
         return True
 
-    # --------------------------------------------------------
-    # CLICK OUTSIDE MENU
-    # --------------------------------------------------------
+
+    # click outside menu
+
 
     menu_height = 220 * SCALE
 
@@ -3041,15 +3005,15 @@ def handle_menu_click(mouse_pos):
     return False
 
 
-# MAIN LOOP
+# main loop
 
 running = True
 
 while running:
 
-    # ------------------------------------------------------------
-    # INTERNET CONNECTION MONITOR
-    # ------------------------------------------------------------
+
+    # internet connection monitor
+
 
     current_time = time.time()
 
@@ -3061,8 +3025,8 @@ while running:
 
             print("Internet connection lost. Returning to Wi-Fi setup.")
 
-            # Stop showing stale aircraft data while the network
-            # is unavailable. The API thread will safely continue
+            # stop showing stale aircraft data while the network
+            # is unavailable. the api thread will safely continue
             # retrying in the background.
             with aircraft_lock:
                 aircraft.clear()
@@ -3077,15 +3041,15 @@ while running:
 
             last_wifi_check = time.time()
 
-    # ------------------------------------------------------------
-    # EVENTS
-    # ------------------------------------------------------------
+
+    # events
+
 
     for event in pygame.event.get():
 
-        # --------------------------------------------------------
-        # WINDOW CLOSE / ESCAPE
-        # --------------------------------------------------------
+
+        # window close / escape
+
 
         if event.type == pygame.QUIT:
 
@@ -3100,15 +3064,15 @@ while running:
 
             continue
 
-        # --------------------------------------------------------
-        # LEFT MOUSE BUTTON / TOUCH DOWN
-        # --------------------------------------------------------
+
+        # left mouse button / touch down
+
 
         if event.type == pygame.MOUSEBUTTONDOWN:
 
-            # ----------------------------------------------------
-            # SCROLL WHEEL UP
-            # ----------------------------------------------------
+
+            # scroll wheel up
+
 
             if event.button == 4:
 
@@ -3118,9 +3082,9 @@ while running:
 
                 continue
 
-            # ----------------------------------------------------
-            # SCROLL WHEEL DOWN
-            # ----------------------------------------------------
+
+            # scroll wheel down
+
 
             if event.button == 5:
 
@@ -3130,29 +3094,29 @@ while running:
 
                 continue
 
-            # ----------------------------------------------------
-            # LEFT CLICK / TOUCH
-            # ----------------------------------------------------
+
+            # left click / touch
+
 
             if event.button == 1:
 
                 mouse_pos = (event.pos[0] * SCALE, event.pos[1] * SCALE)
 
-                # ------------------------------------------------
-                # DETAILS PANEL HAS PRIORITY
-                # ------------------------------------------------
-                #
-                # This is deliberately checked BEFORE the menu and
+
+                # details panel has priority
+
+
+                # this is deliberately checked before the menu and
                 # aircraft handlers.
-                #
-                # Therefore:
-                #
-                #   * X closes the details panel.
-                #   * Touching inside starts a details drag.
-                #   * Clicking outside closes the panel.
-                #   * A details click cannot accidentally select
+
+                # therefore:
+
+                #   * x closes the details panel.
+                #   * touching inside starts a details drag.
+                #   * clicking outside closes the panel.
+                #   * a details click cannot accidentally select
                 #     an aircraft underneath the panel.
-                #
+
 
                 if selected_aircraft is not None:
 
@@ -3160,9 +3124,9 @@ while running:
 
                         continue
 
-                # ------------------------------------------------
-                # MENU
-                # ------------------------------------------------
+
+                # menu
+
 
                 if menu_open and menu_page == "custom_location":
 
@@ -3174,17 +3138,17 @@ while running:
 
                     continue
 
-                # ------------------------------------------------
-                # AIRCRAFT
-                # ------------------------------------------------
+
+                # aircraft
+
 
                 handle_aircraft_click(mouse_pos)
 
                 continue
 
-        # --------------------------------------------------------
-        # TOUCH / MOUSE MOVEMENT
-        # --------------------------------------------------------
+
+        # touch / mouse movement
+
 
         if event.type == pygame.MOUSEMOTION:
 
@@ -3196,9 +3160,9 @@ while running:
 
             continue
 
-        # --------------------------------------------------------
-        # TOUCH / MOUSE RELEASE
-        # --------------------------------------------------------
+
+        # touch / mouse release
+
 
         if event.type == pygame.MOUSEBUTTONUP:
 
@@ -3208,9 +3172,9 @@ while running:
 
             continue
 
-    # ============================================================
-    # UPDATE RADAR LAYOUT
-    # ============================================================
+
+    # update radar layout
+
 
     old_center = RADAR_CENTER
 
@@ -3220,17 +3184,17 @@ while running:
 
         reposition_aircraft()
 
-    # ============================================================
-    # UPDATE AIRCRAFT MOVEMENT / DETAILS
-    # ============================================================
+
+    # update aircraft movement / details
+
 
     update_animation()
 
     update_selected_details()
 
-    # ============================================================
-    # DRAW
-    # ============================================================
+
+    # draw
+
 
     canvas.fill(BACKGROUND)
 
@@ -3252,9 +3216,9 @@ while running:
 
     draw_aircraft_details_panel()
 
-    # ============================================================
-    # DOWNSAMPLE TO DISPLAY
-    # ============================================================
+
+    # downsample to display
+
 
     display_surface = pygame.transform.smoothscale(
         canvas, (WINDOW_WIDTH, WINDOW_HEIGHT)
