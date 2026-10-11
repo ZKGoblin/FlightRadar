@@ -5,22 +5,14 @@ import threading
 import urllib.request
 
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
-
-# The display resolution is detected automatically.
-# This UI is designed specifically to work correctly on
+# the display resolution is detected automatically.
+# this ui is designed specifically to work correctly on
 # small 480x320 touchscreen displays.
-#
-# IMPORTANT:
-# Do not use the old SCALE = 2 system here.
-# Everything is drawn directly at the physical resolution.
 
 
-# ============================================================
-# COLOURS
-# ============================================================
+# do not use the old scale = 2 system here.
+# everything is drawn directly at the physical resolution.
+
 
 BACKGROUND = (5, 10, 7)
 
@@ -34,13 +26,9 @@ WHITE = (235, 240, 225)
 RED = (220, 70, 70)
 
 
-# ============================================================
-# PYGAME INITIALISATION
-# ============================================================
-
 pygame.init()
 
-# Fullscreen and borderless.
+# fullscreen and borderless.
 screen = pygame.display.set_mode(
     (0, 0),
     pygame.FULLSCREEN | pygame.NOFRAME
@@ -54,20 +42,16 @@ pygame.display.set_caption(
 
 clock = pygame.time.Clock()
 
-# Draw directly at the physical display resolution.
+# draw directly at the physical display resolution.
 canvas = pygame.Surface(
     (WINDOW_WIDTH, WINDOW_HEIGHT)
 )
 
 
-# ============================================================
-# FONTS
-# ============================================================
+# these sizes are deliberately small enough for 480x320.
 
-# These sizes are deliberately small enough for 480x320.
-#
-# DejaVu Sans is used instead of the old large Consolas
-# settings because it is normally available on Raspberry Pi
+# dejavu sans is used instead of the old large consolas
+# settings because it is normally available on raspberry pi
 # systems and gives better compact rendering.
 
 FONT_PATH = (
@@ -106,10 +90,6 @@ keyboard_font = pygame.font.Font(
 )
 
 
-# ============================================================
-# WIFI STATE
-# ============================================================
-
 wifi_networks = []
 
 selected_network = None
@@ -132,10 +112,6 @@ connection_result = None
 
 connection_target = None
 
-
-# ============================================================
-# KEYBOARD
-# ============================================================
 
 LETTER_KEYBOARD_ROWS = [
     [
@@ -181,10 +157,6 @@ keyboard_mode = "letters"
 keyboard_shifted = True
 
 
-# ============================================================
-# WIFI CONNECTION CHECK
-# ============================================================
-
 def is_wifi_connected():
     try:
         result = subprocess.run(
@@ -226,10 +198,6 @@ def is_wifi_connected():
         return False
 
 
-# ============================================================
-# INTERNET CONNECTION CHECK
-# ============================================================
-
 def is_internet_connected():
 
     try:
@@ -265,7 +233,7 @@ def is_internet_connected():
             error
         )
 
-    # Fallback internet test.
+    # fallback internet test.
     try:
 
         request = urllib.request.Request(
@@ -287,10 +255,6 @@ def is_internet_connected():
 
         return False
 
-
-# ============================================================
-# WIFI SCANNING
-# ============================================================
 
 def scan_wifi():
 
@@ -415,10 +379,6 @@ def scan_wifi():
         scanning = False
 
 
-# ============================================================
-# WIFI CONNECTION WORKER
-# ============================================================
-
 def _connect_wifi_worker(ssid, password):
     global connecting, wifi_status, wifi_error, connection_result
 
@@ -434,9 +394,6 @@ def _connect_wifi_worker(ssid, password):
         wifi_error = ""
         connection_result = None
 
-        # ---------------------------------------------------------
-        # 1. Find the Wi-Fi device
-        # ---------------------------------------------------------
 
         device_result = subprocess.run(
             [
@@ -475,9 +432,6 @@ def _connect_wifi_worker(ssid, password):
 
         print("Wi-Fi device:", wifi_device)
 
-        # ---------------------------------------------------------
-        # 2. Delete any old connection profiles for this SSID
-        # ---------------------------------------------------------
 
         print("Removing old profiles for this SSID...")
 
@@ -539,17 +493,14 @@ def _connect_wifi_worker(ssid, password):
                     delete_result.stderr.strip()
                 )
 
-        # ---------------------------------------------------------
-        # 3. Create a completely fresh connection
-        # ---------------------------------------------------------
 
         wifi_status = "CREATING WIFI PROFILE..."
 
-        # Use a unique profile name so NetworkManager cannot
+        # use a unique profile name so networkmanager cannot
         # accidentally select an old profile.
         profile_name = "FlightRadar-WiFi"
 
-        # Remove an old FlightRadar profile if one exists.
+        # remove an old flightradar profile if one exists.
         old_profile = subprocess.run(
             [
                 "nmcli",
@@ -607,9 +558,6 @@ def _connect_wifi_worker(ssid, password):
             connection_result = False
             return
 
-        # ---------------------------------------------------------
-        # 4. Explicitly configure WPA-PSK
-        # ---------------------------------------------------------
 
         print("Configuring WPA-PSK security...")
 
@@ -649,9 +597,6 @@ def _connect_wifi_worker(ssid, password):
             connection_result = False
             return
 
-        # ---------------------------------------------------------
-        # 5. Bring the new profile up
-        # ---------------------------------------------------------
 
         wifi_status = "CONNECTING..."
 
@@ -702,9 +647,6 @@ def _connect_wifi_worker(ssid, password):
             connection_result = False
             return
 
-        # ---------------------------------------------------------
-        # 6. Verify Wi-Fi connection
-        # ---------------------------------------------------------
 
         wifi_status = "CHECKING WIFI..."
 
@@ -732,9 +674,6 @@ def _connect_wifi_worker(ssid, password):
 
             time.sleep(0.5)
 
-        # ---------------------------------------------------------
-        # 7. Wi-Fi worked but internet did not
-        # ---------------------------------------------------------
 
         print("Wi-Fi connected but internet could not be confirmed.")
 
@@ -792,10 +731,6 @@ def connect_wifi(
     return True
 
 
-# ============================================================
-# SIGNAL BARS
-# ============================================================
-
 def draw_signal_bars(
     x,
     y,
@@ -851,10 +786,6 @@ def draw_signal_bars(
         )
 
 
-# ============================================================
-# HEADER
-# ============================================================
-
 def draw_header():
 
     title = large_font.render(
@@ -894,10 +825,6 @@ def draw_header():
     )
 
 
-# ============================================================
-# BUTTON
-# ============================================================
-
 def draw_button(
     rect,
     text,
@@ -935,10 +862,6 @@ def draw_button(
     )
 
 
-# ============================================================
-# KEYBOARD KEY
-# ============================================================
-
 def draw_keyboard_key(
     rect,
     key
@@ -975,10 +898,6 @@ def draw_keyboard_key(
     )
 
 
-# ============================================================
-# ACTIVE KEYBOARD
-# ============================================================
-
 def get_active_keyboard_rows():
 
     if keyboard_mode == "symbols":
@@ -1002,10 +921,6 @@ def get_keyboard_key_value(key):
 
     return key
 
-
-# ============================================================
-# NETWORK LIST SCREEN
-# ============================================================
 
 def draw_network_list():
 
@@ -1039,9 +954,6 @@ def draw_network_list():
         border_radius=6
     )
 
-    # --------------------------------------------------------
-    # SCANNING
-    # --------------------------------------------------------
 
     if scanning:
 
@@ -1065,9 +977,6 @@ def draw_network_list():
 
         return
 
-    # --------------------------------------------------------
-    # HEADER
-    # --------------------------------------------------------
 
     title = tiny_font.render(
         "SELECT A NETWORK",
@@ -1083,9 +992,6 @@ def draw_network_list():
         )
     )
 
-    # --------------------------------------------------------
-    # NO NETWORKS
-    # --------------------------------------------------------
 
     if not wifi_networks:
 
@@ -1110,7 +1016,7 @@ def draw_network_list():
 
     else:
 
-        # Keep enough room at the bottom for RESCAN.
+        # keep enough room at the bottom for rescan.
         max_networks = 5
 
         row_height = 34
@@ -1134,7 +1040,7 @@ def draw_network_list():
                 29
             )
 
-            # Selected network.
+            # selected network.
             if (
                 selected_network
                 and
@@ -1150,14 +1056,14 @@ def draw_network_list():
                     border_radius=4
                 )
 
-            # SSID
+
             ssid_text = small_font.render(
                 network["ssid"],
                 True,
                 TEXT_GREEN
             )
 
-            # Prevent extremely long names
+            # prevent extremely long names
             # from running into the signal bars.
             available_width = 265
 
@@ -1195,7 +1101,7 @@ def draw_network_list():
                 )
             )
 
-            # Security.
+            # security.
             if network["security"]:
 
                 security_text = tiny_font.render(
@@ -1222,16 +1128,13 @@ def draw_network_list():
                 security_rect
             )
 
-            # Signal.
+            # signal.
             draw_signal_bars(
                 row_rect.right - 28,
                 row_rect.y + 7,
                 network["signal"]
             )
 
-    # --------------------------------------------------------
-    # RESCAN BUTTON
-    # --------------------------------------------------------
 
     rescan_rect = pygame.Rect(
         panel_x + 10,
@@ -1245,9 +1148,6 @@ def draw_network_list():
         "RESCAN"
     )
 
-    # --------------------------------------------------------
-    # ERROR
-    # --------------------------------------------------------
 
     if wifi_error:
 
@@ -1269,10 +1169,6 @@ def draw_network_list():
             error_rect
         )
 
-
-# ============================================================
-# PASSWORD SCREEN
-# ============================================================
 
 def draw_password_screen():
 
@@ -1306,9 +1202,6 @@ def draw_password_screen():
         border_radius=6
     )
 
-    # --------------------------------------------------------
-    # NETWORK NAME
-    # --------------------------------------------------------
 
     network_name = selected_network["ssid"]
 
@@ -1318,7 +1211,7 @@ def draw_password_screen():
         TEXT_GREEN
     )
 
-    # Truncate long network names.
+    # truncate long network names.
     if title.get_width() > 250:
 
         display_name = network_name
@@ -1357,9 +1250,6 @@ def draw_password_screen():
         title_rect
     )
 
-    # --------------------------------------------------------
-    # PASSWORD FIELD
-    # --------------------------------------------------------
 
     password_rect = pygame.Rect(
         panel_x + 20,
@@ -1403,7 +1293,7 @@ def draw_password_screen():
         TEXT_GREEN
     )
 
-    # If the password becomes longer than the field,
+    # if the password becomes longer than the field,
     # only display the rightmost portion.
     available_width = password_rect.width - 14
 
@@ -1443,9 +1333,6 @@ def draw_password_screen():
         )
     )
 
-    # --------------------------------------------------------
-    # KEYBOARD
-    # --------------------------------------------------------
 
     keyboard_start_y = panel_y + 61
 
@@ -1511,9 +1398,6 @@ def draw_password_screen():
                 get_keyboard_key_value(key)
             )
 
-    # --------------------------------------------------------
-    # SPECIAL BUTTONS
-    # --------------------------------------------------------
 
     special_y = (
         keyboard_start_y
@@ -1529,7 +1413,7 @@ def draw_password_screen():
         4
     )
 
-    # DELETE
+
     backspace_rect = pygame.Rect(
         panel_x + 10,
         special_y,
@@ -1543,7 +1427,7 @@ def draw_password_screen():
         tiny_font
     )
 
-    # SPACE
+
     space_rect = pygame.Rect(
         panel_x + 86,
         special_y,
@@ -1557,7 +1441,7 @@ def draw_password_screen():
         tiny_font
     )
 
-    # SHIFT
+
     shift_rect = pygame.Rect(
         panel_x + 182,
         special_y,
@@ -1576,7 +1460,7 @@ def draw_password_screen():
         tiny_font
     )
 
-    # MODE
+
     mode_rect = pygame.Rect(
         panel_x + 256,
         special_y,
@@ -1595,7 +1479,7 @@ def draw_password_screen():
         tiny_font
     )
 
-    # SHOW / HIDE
+
     show_rect = pygame.Rect(
         panel_x + 325,
         special_y,
@@ -1614,9 +1498,6 @@ def draw_password_screen():
         tiny_font
     )
 
-    # --------------------------------------------------------
-    # STATUS / ERROR
-    # --------------------------------------------------------
 
     status_y = special_y + 34
 
@@ -1660,9 +1541,6 @@ def draw_password_screen():
             status_rect
         )
 
-    # --------------------------------------------------------
-    # BOTTOM BUTTONS
-    # --------------------------------------------------------
 
     bottom_y = WINDOW_HEIGHT - 35
 
@@ -1690,10 +1568,6 @@ def draw_password_screen():
         "CONNECT"
     )
 
-
-# ============================================================
-# CONNECTING SCREEN
-# ============================================================
 
 def draw_connecting_screen():
 
@@ -1735,9 +1609,6 @@ def draw_connecting_screen():
         border_radius=7
     )
 
-    # --------------------------------------------------------
-    # TITLE
-    # --------------------------------------------------------
 
     title = font.render(
         "CONNECTING TO WIFI",
@@ -1757,9 +1628,6 @@ def draw_connecting_screen():
         title_rect
     )
 
-    # --------------------------------------------------------
-    # NETWORK
-    # --------------------------------------------------------
 
     network_name = (
         connection_target
@@ -1773,7 +1641,7 @@ def draw_connecting_screen():
         DIM_GREEN
     )
 
-    # Truncate long names.
+    # truncate long names.
     if network.get_width() > 250:
 
         display_name = network_name
@@ -1812,9 +1680,6 @@ def draw_connecting_screen():
         network_rect
     )
 
-    # --------------------------------------------------------
-    # SPINNER
-    # --------------------------------------------------------
 
     frame = int(
         time.time() * 8
@@ -1854,9 +1719,6 @@ def draw_connecting_screen():
             border_radius=2
         )
 
-    # --------------------------------------------------------
-    # STATUS
-    # --------------------------------------------------------
 
     status = (
         wifi_status
@@ -1901,10 +1763,6 @@ def draw_connecting_screen():
     )
 
 
-# ============================================================
-# NETWORK TOUCH HANDLING
-# ============================================================
-
 def handle_network_click(
     mouse_pos
 ):
@@ -1932,9 +1790,6 @@ def handle_network_click(
         panel_height
     )
 
-    # --------------------------------------------------------
-    # RESCAN
-    # --------------------------------------------------------
 
     rescan_rect = pygame.Rect(
         panel_x + 10,
@@ -1952,9 +1807,6 @@ def handle_network_click(
 
         return True
 
-    # --------------------------------------------------------
-    # NETWORK ROWS
-    # --------------------------------------------------------
 
     row_height = 34
 
@@ -1992,7 +1844,7 @@ def handle_network_click(
 
             keyboard_shifted = True
 
-            # Open networks connect immediately.
+            # open networks connect immediately.
             if not network["security"]:
 
                 connect_wifi(
@@ -2004,10 +1856,6 @@ def handle_network_click(
 
     return False
 
-
-# ============================================================
-# PASSWORD TOUCH HANDLING
-# ============================================================
 
 def handle_password_click(
     mouse_pos
@@ -2037,9 +1885,6 @@ def handle_password_click(
         panel_height
     )
 
-    # --------------------------------------------------------
-    # KEYBOARD
-    # --------------------------------------------------------
 
     keyboard_start_y = panel_y + 61
 
@@ -2111,9 +1956,6 @@ def handle_password_click(
 
                 return True
 
-    # --------------------------------------------------------
-    # SPECIAL BUTTONS
-    # --------------------------------------------------------
 
     special_y = (
         keyboard_start_y
@@ -2129,7 +1971,7 @@ def handle_password_click(
         4
     )
 
-    # DELETE
+
     backspace_rect = pygame.Rect(
         panel_x + 10,
         special_y,
@@ -2146,7 +1988,7 @@ def handle_password_click(
 
         return True
 
-    # SPACE
+
     space_rect = pygame.Rect(
         panel_x + 86,
         special_y,
@@ -2163,7 +2005,7 @@ def handle_password_click(
 
         return True
 
-    # SHIFT
+
     shift_rect = pygame.Rect(
         panel_x + 182,
         special_y,
@@ -2182,7 +2024,7 @@ def handle_password_click(
 
         return True
 
-    # MODE
+
     mode_rect = pygame.Rect(
         panel_x + 256,
         special_y,
@@ -2205,7 +2047,7 @@ def handle_password_click(
 
         return True
 
-    # SHOW / HIDE
+
     show_rect = pygame.Rect(
         panel_x + 325,
         special_y,
@@ -2224,9 +2066,6 @@ def handle_password_click(
 
         return True
 
-    # --------------------------------------------------------
-    # BACK
-    # --------------------------------------------------------
 
     bottom_y = WINDOW_HEIGHT - 35
 
@@ -2254,9 +2093,6 @@ def handle_password_click(
 
         return True
 
-    # --------------------------------------------------------
-    # CONNECT
-    # --------------------------------------------------------
 
     connect_rect = pygame.Rect(
         panel_rect.right - 130,
@@ -2288,10 +2124,6 @@ def handle_password_click(
     return False
 
 
-# ============================================================
-# WIFI SETUP
-# ============================================================
-
 def ensure_wifi():
 
     """
@@ -2316,9 +2148,6 @@ def ensure_wifi():
     global keyboard_shifted
     global password_visible
 
-    # --------------------------------------------------------
-    # INITIAL CONNECTION CHECK
-    # --------------------------------------------------------
 
     if (
         is_wifi_connected()
@@ -2332,9 +2161,6 @@ def ensure_wifi():
 
         return True
 
-    # --------------------------------------------------------
-    # RESET STATE
-    # --------------------------------------------------------
 
     selected_network = None
 
@@ -2354,21 +2180,12 @@ def ensure_wifi():
 
     keyboard_shifted = True
 
-    # --------------------------------------------------------
-    # INITIAL WIFI SCAN
-    # --------------------------------------------------------
 
     scan_wifi()
 
-    # --------------------------------------------------------
-    # MAIN LOOP
-    # --------------------------------------------------------
 
     while True:
 
-        # ----------------------------------------------------
-        # SUCCESSFUL CONNECTION
-        # ----------------------------------------------------
 
         if connection_result is True:
 
@@ -2409,9 +2226,6 @@ def ensure_wifi():
 
             return True
 
-        # ----------------------------------------------------
-        # FAILED CONNECTION
-        # ----------------------------------------------------
 
         if (
             connection_result is False
@@ -2421,25 +2235,19 @@ def ensure_wifi():
 
             connection_result = None
 
-            # Keep the selected network so the user
+            # keep the selected network so the user
             # can enter another password.
 
-        # ----------------------------------------------------
-        # EVENTS
-        # ----------------------------------------------------
 
         for event in pygame.event.get():
 
-            # Ignore normal window close events.
-            #
-            # ESC remains the only exit method.
+            # ignore normal window close events.
+
+            # esc remains the only exit method.
             if event.type == pygame.QUIT:
 
                 continue
 
-            # ------------------------------------------------
-            # PHYSICAL KEYBOARD
-            # ------------------------------------------------
 
             if event.type == pygame.KEYDOWN:
 
@@ -2449,7 +2257,7 @@ def ensure_wifi():
 
                     return False
 
-                # Physical keyboard password input.
+                # physical keyboard password input.
                 if (
                     selected_network is not None
                     and
@@ -2505,17 +2313,11 @@ def ensure_wifi():
                             event.unicode
                         )
 
-            # ------------------------------------------------
-            # DO NOT ALLOW TOUCH ACTIONS WHILE CONNECTING
-            # ------------------------------------------------
 
             if connecting:
 
                 continue
 
-            # ------------------------------------------------
-            # TOUCH / MOUSE
-            # ------------------------------------------------
 
             if event.type == pygame.MOUSEBUTTONDOWN:
 
@@ -2523,8 +2325,8 @@ def ensure_wifi():
 
                     continue
 
-                # Because the UI is drawn directly at the
-                # physical resolution, NO SCALE conversion
+                # because the ui is drawn directly at the
+                # physical resolution, no scale conversion
                 # is required here.
                 mouse_pos = event.pos
 
@@ -2540,9 +2342,6 @@ def ensure_wifi():
                         mouse_pos
                     )
 
-        # ----------------------------------------------------
-        # DRAW
-        # ----------------------------------------------------
 
         canvas.fill(
             BACKGROUND
@@ -2562,9 +2361,6 @@ def ensure_wifi():
 
             draw_password_screen()
 
-        # ----------------------------------------------------
-        # DISPLAY
-        # ----------------------------------------------------
 
         screen.blit(
             canvas,
